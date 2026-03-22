@@ -240,7 +240,10 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="nav-item" onclick="nav('pricedb')"><span class="nav-icon">▦</span> Unit Price Database</div>
       <div class="nav-item" onclick="nav('master')"><span class="nav-icon">◧</span> Master Template</div>
     </nav>
-    <div class="sidebar-footer">v2.0 · ENGEAR CO., LTD.</div>
+    <div class="sidebar-footer">
+      <div style="margin-bottom:8px">v2.0 · ENGEAR CO., LTD.</div>
+      <div onclick="clearData()" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:4px" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">⊘ ล้างข้อมูลทั้งหมด</div>
+    </div>
   </aside>
 
   <!-- MAIN -->
@@ -763,6 +766,7 @@ function confirmNewProject(){
   renderProjects();
   updateAllSelects();
   toast('สร้างโครงการ "'+name+'" เรียบร้อย');
+  saveData();
 }
 
 function editProject(id){
@@ -789,6 +793,7 @@ function editProject(id){
     renderProjects();
     updateAllSelects();
     toast('แก้ไขโครงการเรียบร้อย');
+    saveData();
     btn.onclick = confirmNewProject;
   };
   openModal('modal-project');
@@ -837,9 +842,8 @@ function toggleCat(id){
   else S.selectedCats.push(id);
   renderCatTags();
   renderBoqTable();
+  saveData();
 }
-
-function renderBoqTable(){
   const tbody = document.getElementById('boq-tbody');
   if(!tbody) return;
   const cats = S.categories.filter(c=>S.selectedCats.includes(c.id));
@@ -891,6 +895,7 @@ function updateItem(id,field,val){
   item.total = item.qty * ((item.mat||0)+(item.lab||0));
   renderBoqTable();
   renderSummaryIfActive();
+  saveData();
 }
 
 function removeItem(id){
@@ -898,6 +903,7 @@ function removeItem(id){
   renderBoqTable();
   renderSummaryIfActive();
   toast('ลบรายการแล้ว');
+  saveData();
 }
 
 function addItemForCat(catId){
@@ -985,6 +991,7 @@ function confirmAddItem(){
   renderCatTags();
   renderBoqTable();
   toast('เพิ่มรายการ "'+desc+'" แล้ว');
+  saveData();
 }
 
 // ================================================================
@@ -1203,6 +1210,7 @@ function confirmSaveRevision(){
   closeModal('modal-revision');
   updateRevFilterSelect();
   toast(`บันทึก ${p?.quoNo||''}-${nextRev} เรียบร้อย`);
+  saveData();
 }
 
 function updateRevFilterSelect(){
@@ -1276,6 +1284,7 @@ function confirmAddPrice(){
   closeModal('modal-price');
   renderPriceDB();
   toast('เพิ่มราคา "'+name+'" แล้ว');
+  saveData();
 }
 
 function editPriceItem(id){
@@ -1298,6 +1307,7 @@ function editPriceItem(id){
     closeModal('modal-price');
     renderPriceDB();
     toast('แก้ไขราคาแล้ว');
+    saveData();
     btn.onclick=confirmAddPrice;
   };
   openModal('modal-price');
@@ -1309,6 +1319,7 @@ function deletePriceItem(id){
   S.priceDB=S.priceDB.filter(x=>x.id!==id);
   renderPriceDB();
   toast('ลบ "'+p.name+'" แล้ว');
+  saveData();
 }
 
 // ================================================================
@@ -1344,6 +1355,7 @@ function addCategoryModal(){
   S.categories.push({id:Date.now(),name,icon:'📦',sub:[]});
   renderMaster();
   toast('เพิ่มหมวด "'+name+'" แล้ว');
+  saveData();
 }
 
 function removeCategory(i){
@@ -1354,6 +1366,7 @@ function removeCategory(i){
   renderMaster();
   renderCatTags();
   renderBoqTable();
+  saveData();
 }
 
 function addSub(ci){
@@ -1361,11 +1374,13 @@ function addSub(ci){
   if(!s) return;
   S.categories[ci].sub.push(s);
   renderMaster();
+  saveData();
 }
 
 function removeSub(ci,si){
   S.categories[ci].sub.splice(si,1);
   renderMaster();
+  saveData();
 }
 
 // ================================================================
@@ -1548,7 +1563,50 @@ function updateAllSelects(){
   }
 }
 
+// ================================================================
+// LOCAL STORAGE
+// ================================================================
+function saveData(){
+  try{
+    localStorage.setItem('engear_v2',JSON.stringify({
+      projects:S.projects,
+      categories:S.categories,
+      priceDB:S.priceDB,
+      lineItems:S.lineItems,
+      selectedCats:S.selectedCats,
+      activeProjectId:S.activeProjectId,
+      revisions:S.revisions,
+      extras:S.extras
+    }));
+  }catch(e){console.warn('Save failed',e);}
+}
+
+function loadData(){
+  try{
+    const saved=localStorage.getItem('engear_v2');
+    if(saved){
+      const d=JSON.parse(saved);
+      if(d.projects?.length) S.projects=d.projects;
+      if(d.categories?.length) S.categories=d.categories;
+      if(d.priceDB?.length) S.priceDB=d.priceDB;
+      if(d.lineItems) S.lineItems=d.lineItems;
+      if(d.selectedCats) S.selectedCats=d.selectedCats;
+      if(d.activeProjectId) S.activeProjectId=d.activeProjectId;
+      if(d.revisions?.length) S.revisions=d.revisions;
+      if(d.extras) S.extras={...S.extras,...d.extras};
+    }
+  }catch(e){console.warn('Load failed',e);}
+}
+
+function clearData(){
+  if(confirm('ล้างข้อมูลทั้งหมดและเริ่มใหม่?')){
+    localStorage.removeItem('engear_v2');
+    location.reload();
+  }
+}
+
 // INIT
+loadData();
 updateAllSelects();
 renderDashboard();
 </script>
