@@ -8,25 +8,25 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
-  --bg: #0f0f0f;
-  --bg2: #161616;
-  --bg3: #1e1e1e;
-  --bg4: #252525;
-  --border: #2a2a2a;
-  --border2: #333;
-  --text: #e8e6e0;
-  --text2: #888;
-  --text3: #555;
-  --accent: #c8a96e;
-  --accent2: #e8c989;
-  --accent-dim: rgba(200,169,110,0.12);
-  --accent-dim2: rgba(200,169,110,0.06);
-  --green: #5cad7d;
-  --green-dim: rgba(92,173,125,0.12);
-  --red: #c0615e;
-  --red-dim: rgba(192,97,94,0.12);
-  --blue: #5b8fd4;
-  --blue-dim: rgba(91,143,212,0.12);
+  --bg: #0a0f0c;
+  --bg2: #111a14;
+  --bg3: #182110;
+  --bg4: #1f2a1a;
+  --border: #1e2e22;
+  --border2: #2a3d2e;
+  --text: #e0ead2;
+  --text2: #7a9e80;
+  --text3: #4a6b50;
+  --accent: #4ade80;
+  --accent2: #86efac;
+  --accent-dim: rgba(74,222,128,0.12);
+  --accent-dim2: rgba(74,222,128,0.06);
+  --green: #4ade80;
+  --green-dim: rgba(74,222,128,0.12);
+  --red: #f87171;
+  --red-dim: rgba(248,113,113,0.12);
+  --blue: #60a5fa;
+  --blue-dim: rgba(96,165,250,0.12);
   --r: 6px;
   --r2: 10px;
   --mono: 'IBM Plex Mono', monospace;
@@ -1586,16 +1586,24 @@ function loadData(){
     const saved=localStorage.getItem('engear_v2');
     if(saved){
       const d=JSON.parse(saved);
+      // merge: ถ้า localStorage มีข้อมูล ใช้ของ localStorage
+      // ถ้าไม่มี (ครั้งแรก) ใช้ default ใน S ที่กำหนดไว้แล้ว
       if(d.projects?.length) S.projects=d.projects;
       if(d.categories?.length) S.categories=d.categories;
       if(d.priceDB?.length) S.priceDB=d.priceDB;
-      if(d.lineItems) S.lineItems=d.lineItems;
-      if(d.selectedCats) S.selectedCats=d.selectedCats;
-      if(d.activeProjectId) S.activeProjectId=d.activeProjectId;
+      if(Array.isArray(d.lineItems)) S.lineItems=d.lineItems;
+      if(Array.isArray(d.selectedCats)) S.selectedCats=d.selectedCats;
+      if(d.activeProjectId!=null) S.activeProjectId=d.activeProjectId;
       if(d.revisions?.length) S.revisions=d.revisions;
       if(d.extras) S.extras={...S.extras,...d.extras};
+    } else {
+      // ครั้งแรกที่เปิด — save default data ลง localStorage เลย
+      saveData();
     }
-  }catch(e){console.warn('Load failed',e);}
+  }catch(e){
+    console.warn('Load failed, using defaults',e);
+    saveData();
+  }
 }
 
 function clearData(){
