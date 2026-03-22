@@ -844,6 +844,8 @@ function toggleCat(id){
   renderBoqTable();
   saveData();
 }
+
+function renderBoqTable(){
   const tbody = document.getElementById('boq-tbody');
   if(!tbody) return;
   const cats = S.categories.filter(c=>S.selectedCats.includes(c.id));
