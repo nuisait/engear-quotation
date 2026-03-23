@@ -1476,96 +1476,272 @@ function removeSub(ci,si){
 // ================================================================
 function exportExcel(){
   if(!window.XLSX){toast('XLSX library ยังไม่โหลด','error');return;}
-  const proj=S.projects.find(x=>x.id===S.activeProjectId)||{name:'โครงการ',quoNo:'QUO',client:'',location:''};
+  const proj=S.projects.find(x=>x.id===S.activeProjectId)||{name:'โครงการ',quoNo:'QUO-EG',client:'',company:'',location:''};
+  const cats=S.categories.filter(c=>S.selectedCats.includes(c.id));
+  const activeCats=cats.filter(c=>S.lineItems.some(x=>x.catId===c.id));
   const sub=S.lineItems.reduce((s,x)=>s+x.total,0);
   const labSum=S.lineItems.reduce((s,x)=>s+x.qty*(x.lab||0),0);
   const matSum=S.lineItems.reduce((s,x)=>s+x.qty*(x.mat||0),0);
-  const otExtra=labSum*(S.extras.otPct/100)*(S.extras.otMul-1);
-  const adj=sub+otExtra+S.extras.access+S.extras.travel;
-  const oh=adj*(S.extras.overhead/100);
+  const otExtra=labSum*(S.extras.otPct/100)*((S.extras.otMul||1)-1);
+  const adj=sub+otExtra+(S.extras.access||0)+(S.extras.travel||0);
+  const oh=adj*((S.extras.overhead||10)/100);
   const total=adj+oh;
-  const vat=total*(S.extras.vat/100);
+  const vat=total*((S.extras.vat||7)/100);
   const net=total+vat;
-
+  const today=new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'});
   const wb=XLSX.utils.book_new();
 
-  // ---- QUOTATION Sheet ----
-  const quoData=[
-    ['','','ENGEAR CO., LTD.','','','ใบเสนอราคา'],
-    ['','','บริษัท เอ็นเกียร์ จำกัด'],
-    ['','','779/10 ถ.ประชาอุทิศ สามเสนนอก ห้วยขวาง กรุงเทพฯ 10310'],
-    ['','','โทร : 02-691-2887   แฟ็กซ์ : 02-691-2887','','','QUOTATION'],
-    [],
-    ['เรียน / Attention','','','','','เลขที่ / No. :',''+proj.quoNo],
-    ['',''+proj.client,'','','','วันที่ / Date :',new Date().toLocaleDateString('th-TH')],
-    ['',''+proj.company],
-    [],
-    ['','','โครงการ / Project :',''+proj.name,'สถานที่ :',''+proj.location],
-    [],
-    ['ลำดับ','','รายการ','','จำนวน','ราคา/หน่วย','ราคารวม'],
-    ['Item','','Description','','Qty.','Unit Price','Grand Total'],
-    [],
-  ];
-  const cats=S.categories.filter(c=>S.selectedCats.includes(c.id));
-  let rowIdx=1;
-  cats.forEach(cat=>{
+  // ─── Helpers ────────────────────────────────────────────────────────────
+  function n2c(n){
+    let s=''; while(n>0){let r=(n-1)%26; s=String.fromCharCode(65+r)+s; n=Math.floor((n-1)/26);} return s;
+  }
+  function addr(r,c){return n2c(c)+r;}
+
+  // Cell style helpers (SheetJS Pro needed for full styles, but we use what's available)
+  // We build using cell objects with 'z' (number format), 'v' (value), 'f' (formula), 't' (type)
+  function cv(v,t){  // cell value
+    const c={v,t:t||'s'};
+    if(typeof v==='number') c.t='n';
+    return c;
+  }
+  function cf(f,v){ // cell formula
+    return {v:v||0, f, t:'n'};
+  }
+
+  // Set cell in worksheet
+  function sc(ws,r,c,val){
+    const a=addr(r,c);
+    if(val===null||val===undefined){ws[a]={t:'s',v:''};return;}
+    if(typeof val==='object'&&val.f) {ws[a]=val;return;}
+    if(typeof val==='number'){ws[a]={t:'n',v:val,z:'#,##0'};return;}
+    ws[a]={t:'s',v:String(val)};
+  }
+
+  function setRange(ws,maxR,maxC){
+    ws['!ref']=`A1:${addr(maxR,maxC)}`;
+  }
+
+  function addMerge(ws,r1,c1,r2,c2){
+    if(!ws['!merges'])ws['!merges']=[];
+    ws['!merges'].push({s:{r:r1-1,c:c1-1},e:{r:r2-1,c:c2-1}});
+  }
+
+  // ─── BOQ Sheet ──────────────────────────────────────────────────────────
+  const wsB={};
+  wsB['!cols']=[{wch:8},{wch:46},{wch:8},{wch:7},{wch:14},{wch:14},{wch:14},{wch:16}];
+  wsB['!rows']=[{},{hpx:22},{hpx:22},{},{},{hpx:20},{hpx:20},{hpx:20}];
+
+  // Header
+  sc(wsB,2,1,`โครงการ / Project :  ${proj.name}`);
+  sc(wsB,3,1,`เจ้าของโครงการ / Owner :  ${proj.company||proj.client||''}`);
+  addMerge(wsB,2,1,2,8);
+  addMerge(wsB,3,1,3,8);
+
+  // Table header row 6-8
+  sc(wsB,6,1,'ลำดับ'); sc(wsB,6,2,'รายการ'); sc(wsB,6,3,'จำนวน'); sc(wsB,6,4,'หน่วย');
+  sc(wsB,6,5,'ราคาต่อหน่วย / Unit Price'); sc(wsB,6,8,'รวมเป็นเงิน');
+  addMerge(wsB,6,5,6,7);
+
+  sc(wsB,7,1,'Item'); sc(wsB,7,2,'Description'); sc(wsB,7,3,'QTY.'); sc(wsB,7,4,'Unit');
+  sc(wsB,7,5,'ค่าของ'); sc(wsB,7,6,'ค่าแรง'); sc(wsB,7,7,'รวม'); sc(wsB,7,8,'Amount');
+
+  sc(wsB,8,5,'Material'); sc(wsB,8,6,'Labour'); sc(wsB,8,7,'Total');
+
+  // Data rows
+  let bRow=9;
+  const catSectionRows={}; // catId -> section row
+
+  activeCats.forEach((cat,ci)=>{
+    const items=S.lineItems.filter(x=>x.catId===cat.id);
+    if(!items.length) return;
+
+    const secRow=bRow;
+    catSectionRows[cat.id]=secRow;
+    sc(wsB,bRow,1,ci+1);
+    sc(wsB,bRow,2,cat.name);
+    addMerge(wsB,bRow,2,bRow,7);
+    bRow++;
+
+    const itemStartRow=bRow;
+    items.forEach((item,ii)=>{
+      sc(wsB,bRow,1,`${ci+1}.${ii+1}`);
+      sc(wsB,bRow,2,item.desc);
+      sc(wsB,bRow,3,item.qty);
+      sc(wsB,bRow,4,item.unit);
+      sc(wsB,bRow,5,item.mat);
+      sc(wsB,bRow,6,item.lab);
+      wsB[addr(bRow,7)]=cf(`E${bRow}+F${bRow}`, item.mat+item.lab);
+      wsB[addr(bRow,8)]=cf(`C${bRow}*G${bRow}`, item.total);
+      bRow++;
+    });
+
+    // Back-fill section H
+    const itemEndRow=bRow-1;
+    wsB[addr(secRow,8)]=cf(`SUM(H${itemStartRow}:H${itemEndRow})`,
+      items.reduce((s,x)=>s+x.total,0));
+
+    bRow++; // blank row
+  });
+
+  // Grand total
+  const allItemRows=Object.values(catSectionRows);
+  sc(wsB,bRow,1,''); addMerge(wsB,bRow,1,bRow,7);
+  sc(wsB,bRow,1,'รวมทั้งหมด / Grand Total');
+  wsB[addr(bRow,8)]=cf(`SUM(H9:H${bRow-1})`, sub);
+  const boqGrandRow=bRow;
+
+  setRange(wsB, bRow, 8);
+  XLSX.utils.book_append_sheet(wb, wsB, 'BOQ');
+
+  // ─── Quotation Sheet ────────────────────────────────────────────────────
+  const wsQ={};
+  wsQ['!cols']=[{wch:6},{wch:18},{wch:10},{wch:20},{wch:7},{wch:7},{wch:20},{wch:18}];
+
+  // Company header
+  sc(wsQ,1,3,'ENGEAR CO., LTD.');
+  sc(wsQ,1,6,'ใบเสนอราคา');
+  addMerge(wsQ,1,6,1,8);
+
+  sc(wsQ,2,3,'บริษัท เอ็นเกียร์ จำกัด');
+  sc(wsQ,3,3,'779/10 ถ.ประชาอุทิศ สามเสนนอก ห้วยขวาง กรุงเทพฯ 10310');
+  addMerge(wsQ,3,3,3,5);
+  sc(wsQ,4,3,'โทร :  02-691-2887     แฟ็กซ์ :  02-691-2887');
+  addMerge(wsQ,4,3,4,5);
+  sc(wsQ,4,6,'QUOTATION');
+  addMerge(wsQ,4,6,4,8);
+  sc(wsQ,5,3,'เลขประจำตัวผู้เสียภาษี :  0105553080044');
+  addMerge(wsQ,5,3,5,5);
+
+  // Attention block
+  sc(wsQ,7,1,'เรียน / Attention');
+  sc(wsQ,7,7,'เลขที่ / No. :');
+  sc(wsQ,7,8,proj.quoNo);
+  sc(wsQ,8,2,proj.client||'');
+  sc(wsQ,8,7,'วันที่ / Date :');
+  sc(wsQ,8,8,today);
+  sc(wsQ,9,2,proj.company||'');
+  if(proj.phone) sc(wsQ,10,2,`Mobile: ${proj.phone}`);
+  if(proj.email) sc(wsQ,11,2,`Email: ${proj.email}`);
+
+  // Project info row 13
+  sc(wsQ,13,3,'โครงการ / Project :');
+  sc(wsQ,13,4,proj.name);
+  addMerge(wsQ,13,4,13,5);
+  sc(wsQ,13,6,'สถานที่ / Location :');
+  sc(wsQ,13,7,proj.location||'');
+  addMerge(wsQ,13,7,13,8);
+
+  // Table headers rows 15-16
+  sc(wsQ,15,1,'ลำดับ');   sc(wsQ,15,2,'รายการ'); addMerge(wsQ,15,2,15,4);
+  sc(wsQ,15,5,'จำนวน');  sc(wsQ,15,6,'ราคา/หน่วย'); sc(wsQ,15,7,'ราคา'); sc(wsQ,15,8,'ราคารวม');
+  sc(wsQ,16,1,'Item');    sc(wsQ,16,2,'Description'); addMerge(wsQ,16,2,16,4);
+  sc(wsQ,16,5,'Qty.');   sc(wsQ,16,6,'Unit Price');   sc(wsQ,16,7,'Price'); sc(wsQ,16,8,'Grand Total');
+
+  // Project title row 17
+  sc(wsQ,17,3,`${proj.name}`);
+  addMerge(wsQ,17,3,17,8);
+
+  // Data rows - category summary
+  let qRow=18;
+  activeCats.forEach((cat,ci)=>{
     const items=S.lineItems.filter(x=>x.catId===cat.id);
     if(!items.length) return;
     const catTot=items.reduce((s,x)=>s+x.total,0);
-    quoData.push([rowIdx,'',''+cat.name,'','1','',catTot]);
+
+    sc(wsQ,qRow,1,ci+1);
+    sc(wsQ,qRow,2,cat.name);
+    addMerge(wsQ,qRow,2,qRow,4);
+    sc(wsQ,qRow,5,1);
+    wsQ[addr(qRow,7)]=cf(`BOQ!H${catSectionRows[cat.id]}`, catTot);
+    wsQ[addr(qRow,8)]=cf(`E${qRow}*G${qRow}`, catTot);
+
     items.forEach(item=>{
-      quoData.push(['','',''+item.desc,'',''+item.qty,''+fmt(item.mat+item.lab),item.total]);
+      qRow++;
+      sc(wsQ,qRow,2,`  ${item.desc}`);
+      addMerge(wsQ,qRow,2,qRow,4);
+      sc(wsQ,qRow,5,item.qty);
+      wsQ[addr(qRow,6)]={t:'n',v:item.mat+item.lab,z:'#,##0'};
+      wsQ[addr(qRow,8)]=cf(`E${qRow}*F${qRow}`, item.total);
     });
-    quoData.push([]);
-    rowIdx++;
-  });
-  quoData.push(['','','','','','รวมเป็นเงิน / Sub Total',sub]);
-  if(oh) quoData.push(['','','','','','ค่าดำเนินการ / Overhead '+S.extras.overhead+'%',oh]);
-  quoData.push(['','','','','','รวมทั้งสิ้น / Total',total]);
-  quoData.push(['','','','','','ภาษีมูลค่าเพิ่ม / VAT '+S.extras.vat+'%',vat]);
-  quoData.push(['','','','','','จำนวนเงินรวมสุทธิ / Net Total',net]);
-  const wsQuo=XLSX.utils.aoa_to_sheet(quoData);
-  wsQuo['!cols']=[{wch:8},{wch:6},{wch:40},{wch:10},{wch:10},{wch:20},{wch:18}];
-  XLSX.utils.book_append_sheet(wb,wsQuo,'Quotation');
 
-  // ---- BOQ Sheet ----
-  const boqData=[
-    ['โครงการ / Project :',''+proj.name],
-    ['เจ้าของโครงการ / Owner :',''+proj.company],
-    [],
-    ['ลำดับ','รายการ','จำนวน','หน่วย','ค่าของ','ค่าแรง','รวม/หน่วย','รวมเป็นเงิน'],
-    ['Item','Description','QTY.','Unit','Material','Labour','Total','Amount'],
-    [],
-  ];
-  let bIdx=1;
-  cats.forEach(cat=>{
-    const items=S.lineItems.filter(x=>x.catId===cat.id);
-    if(!items.length) return;
-    const catTot=items.reduce((s,x)=>s+x.total,0);
-    boqData.push([bIdx,''+cat.name,'','','','','',catTot]);
-    items.forEach((item,i)=>{
-      boqData.push([bIdx+'.'+(i+1),''+item.desc,item.qty,''+item.unit,item.mat,item.lab,item.mat+item.lab,item.total]);
-    });
-    boqData.push([]);
-    bIdx++;
+    qRow++;
+    qRow++; // blank row
   });
-  boqData.push(['','Sub Total','','',''+fmt(matSum),''+fmt(labSum),'',sub]);
-  const wsBoq=XLSX.utils.aoa_to_sheet(boqData);
-  wsBoq['!cols']=[{wch:8},{wch:40},{wch:10},{wch:8},{wch:14},{wch:14},{wch:14},{wch:16}];
-  XLSX.utils.book_append_sheet(wb,wsBoq,'BOQ');
 
-  // ---- Revision History Sheet ----
-  const revData=[['Version','วันที่','หมายเหตุ','จำนวนรายการ','ยอดรวมสุทธิ (฿)']];
+  // Totals
+  const firstDataRow=18;
+  const lastDataRow=qRow-2;
+  const ohPct=(S.extras.overhead||10)/100;
+  const vatPct=(S.extras.vat||7)/100;
+
+  qRow++;
+  const subRow=qRow;
+  sc(wsQ,qRow,7,'รวมเป็นเงิน / Sub Total');
+  addMerge(wsQ,qRow,1,qRow,7);
+  wsQ[addr(qRow,8)]=cf(`SUMIF(E${firstDataRow}:E${lastDataRow},1,H${firstDataRow}:H${lastDataRow})`, sub);
+  qRow++;
+
+  const ohRow=qRow;
+  sc(wsQ,qRow,7,`ค่าดำเนินการ / Overhead ${S.extras.overhead||10}%`);
+  addMerge(wsQ,qRow,1,qRow,7);
+  wsQ[addr(qRow,8)]=cf(`H${subRow}*${ohPct}`, oh);
+  qRow++;
+
+  const totalRow=qRow;
+  sc(wsQ,qRow,7,'รวมเป็นเงินทั้งสิ้น / Total');
+  addMerge(wsQ,qRow,1,qRow,7);
+  wsQ[addr(qRow,8)]=cf(`H${subRow}+H${ohRow}`, total);
+  qRow++;
+
+  const vatRow=qRow;
+  sc(wsQ,qRow,7,`ภาษีมูลค่าเพิ่ม / VAT ${S.extras.vat||7}%`);
+  addMerge(wsQ,qRow,1,qRow,7);
+  wsQ[addr(qRow,8)]=cf(`H${totalRow}*${vatPct}`, vat);
+  qRow++;
+
+  sc(wsQ,qRow,7,'จำนวนเงินรวมสุทธิ / Net Total');
+  addMerge(wsQ,qRow,1,qRow,7);
+  wsQ[addr(qRow,8)]=cf(`H${totalRow}+H${vatRow}`, net);
+  qRow+=2;
+
+  // Footer
+  sc(wsQ,qRow,1,'กำหนดยืนราคา / Price Validity :   30   วัน / Days');
+  qRow+=2;
+  sc(wsQ,qRow,1,'การชำระเงิน / Payment Term');
+  qRow++;
+  sc(wsQ,qRow,2,'เบิกจ่ายตาม Monthly Progress เครดิต 95 วัน');
+  qRow+=4;
+  sc(wsQ,qRow,6,'เสนอราคาโดย / Quoted :');
+  qRow++;
+  sc(wsQ,qRow,7,'(โสภณ มหากาญจนกุล)');
+  addMerge(wsQ,qRow,7,qRow,8);
+  qRow++;
+  sc(wsQ,qRow,7,'Sophon Mahakanchanakul');
+  addMerge(wsQ,qRow,7,qRow,8);
+  qRow+=2;
+  sc(wsQ,qRow,7,'โทร / Mobile :');
+  sc(wsQ,qRow,8,'081-866-9339');
+
+  setRange(wsQ, qRow, 8);
+
+  // Insert Quotation as first sheet
+  XLSX.utils.book_append_sheet(wb, wsQ, 'Quotation');
+  // Reorder: Quotation first, then BOQ
+  wb.SheetNames = ['Quotation', 'BOQ', ...wb.SheetNames.filter(s=>s!=='Quotation'&&s!=='BOQ')];
+
+  // ─── Revision History Sheet ─────────────────────────────────────────────
+  const revRows=[['Version','วันที่','หมายเหตุ / Note','จำนวนรายการ','ยอดรวมสุทธิ (฿)']];
   S.revisions.filter(r=>r.projId===S.activeProjectId).forEach(r=>{
-    revData.push([r.version,r.date,r.note,r.items,r.total]);
+    revRows.push([r.version, r.date, r.note||'', r.items, r.total]);
   });
-  const wsRev=XLSX.utils.aoa_to_sheet(revData);
+  const wsRev=XLSX.utils.aoa_to_sheet(revRows);
   wsRev['!cols']=[{wch:10},{wch:14},{wch:40},{wch:14},{wch:18}];
-  XLSX.utils.book_append_sheet(wb,wsRev,'Revision History');
+  wb.SheetNames.push('Revision History');
+  wb.Sheets['Revision History']=wsRev;
 
-  const filename=proj.quoNo+'_'+proj.name.replace(/\s+/g,'_')+'.xlsx';
-  XLSX.writeFile(wb,filename);
-  toast('Export "'+filename+'" สำเร็จ');
+  const filename=`${proj.quoNo}_${proj.name.replace(/[\s\/\\:*?"<>|]+/g,'_')}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  toast(`Export "${filename}" สำเร็จ ✓`);
 }
 
 // ================================================================
