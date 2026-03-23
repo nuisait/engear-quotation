@@ -498,23 +498,55 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
 <!-- ADD LINE ITEM MODAL -->
 <div id="modal-lineitem" class="overlay">
-  <div class="modal">
+  <div class="modal" style="width:560px">
     <div class="modal-title">เพิ่มรายการงาน <span class="close" onclick="closeModal('modal-lineitem')">×</span></div>
-    <div class="form-group" style="margin-bottom:12px"><label>หมวดงาน</label><select id="m-cat" onchange="onMCatChange()"><option value="">-- เลือกหมวดงาน --</option></select></div>
-    <div class="form-group" style="margin-bottom:12px"><label>รายการสำเร็จรูป (จาก Template)</label><select id="m-template"><option value="">-- พิมพ์เองหรือเลือกจากรายการ --</option></select></div>
-    <div class="form-group" style="margin-bottom:12px"><label>ชื่อรายการ / Description</label><input id="m-desc" placeholder="ระบุรายการงาน"></div>
-    <div class="form-row cols3" style="margin-bottom:12px">
-      <div class="form-group"><label>จำนวน (QTY)</label><input type="number" id="m-qty" value="1" class="num"></div>
-      <div class="form-group"><label>หน่วย</label><select id="m-unit"><option>ตร.ม.</option><option>ม.</option><option>ชุด</option><option>งาน</option><option>ชิ้น</option><option>เหมา</option></select></div>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label>หมวดงาน</label>
+      <select id="m-cat" onchange="onMCatChange()"><option value="">-- เลือกหมวดงาน --</option></select>
+    </div>
+
+    <!-- Price DB quick-pick -->
+    <div id="m-pricedb-wrap" style="display:none;margin-bottom:14px">
+      <label style="font-size:11px;color:var(--text2);display:block;margin-bottom:6px;letter-spacing:.5px">เลือกจาก Unit Price Database</label>
+      <div id="m-pricedb-list" style="display:flex;flex-wrap:wrap;gap:6px;max-height:130px;overflow-y:auto;padding:2px"></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:5px">คลิกเพื่อ auto-fill ราคา — แก้ไขได้ด้านล่างก่อนกด confirm</div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin-bottom:14px">
+
+    <div class="form-group" style="margin-bottom:12px">
+      <label>ชื่อรายการ / Description</label>
+      <input id="m-desc" placeholder="ระบุรายการงาน หรือพิมพ์เอง">
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="form-group"><label>จำนวน (QTY)</label><input type="number" id="m-qty" value="1" class="num" oninput="calcMTotal()"></div>
+      <div class="form-group"><label>หน่วย</label>
+        <select id="m-unit">
+          <option>ตร.ม.</option><option>ม.</option><option>ชุด</option>
+          <option>งาน</option><option>ชิ้น</option><option>เหมา</option>
+        </select>
+      </div>
       <div class="form-group"><label>ราคา/หน่วย (รวม)</label><input type="number" id="m-total-price" value="0" class="num" oninput="splitPrice()"></div>
     </div>
-    <div class="form-row cols2" style="margin-bottom:12px">
-      <div class="form-group"><label>ค่าของ / Material (฿/หน่วย)</label><input type="number" id="m-mat" value="0" class="num" oninput="calcMTotal()"></div>
-      <div class="form-group"><label>ค่าแรง / Labour (฿/หน่วย)</label><input type="number" id="m-lab" value="0" class="num" oninput="calcMTotal()"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div class="form-group">
+        <label>ค่าของ / Material <span style="font-size:10px;color:var(--text3)">(฿/หน่วย)</span></label>
+        <input type="number" id="m-mat" value="0" class="num" oninput="calcMTotal()">
+      </div>
+      <div class="form-group">
+        <label>ค่าแรง / Labour <span style="font-size:10px;color:var(--text3)">(฿/หน่วย)</span></label>
+        <input type="number" id="m-lab" value="0" class="num" oninput="calcMTotal()">
+      </div>
     </div>
-    <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;font-family:var(--mono);font-size:13px;margin-bottom:16px">
-      <span style="color:var(--text3)">ยอดรวม: </span><span id="m-preview" style="color:var(--accent)">0 ฿</span>
+
+    <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;font-family:var(--mono);font-size:13px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+      <span style="color:var(--text3)">ยอดรวม:</span>
+      <span id="m-preview" style="color:var(--accent);font-size:15px">0 ฿</span>
     </div>
+
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn" onclick="closeModal('modal-lineitem')">ยกเลิก</button>
       <button class="btn btn-gold" onclick="confirmAddItem()">เพิ่มรายการ</button>
@@ -922,41 +954,95 @@ function populateAddModal(catId){
   const el = document.getElementById('m-cat');
   el.innerHTML = '<option value="">-- เลือกหมวดงาน --</option>'+S.categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   if(catId) el.value = catId;
-  onMCatChange();
   document.getElementById('m-desc').value='';
   document.getElementById('m-qty').value=1;
   document.getElementById('m-mat').value=0;
   document.getElementById('m-lab').value=0;
   document.getElementById('m-total-price').value=0;
   document.getElementById('m-preview').textContent='0 ฿';
+  document.getElementById('m-pricedb-wrap').style.display='none';
+  onMCatChange();
 }
 
 function onMCatChange(){
   const catId = parseInt(document.getElementById('m-cat').value);
-  const tmpl = document.getElementById('m-template');
-  tmpl.innerHTML='<option value="">-- เลือกจาก template หรือพิมพ์เอง --</option>';
-  if(catId){
-    const cat = S.categories.find(c=>c.id===catId);
-    if(cat) cat.sub.forEach(s=>tmpl.innerHTML+=`<option value="${s}">${s}</option>`);
-    // also load from priceDB
-    S.priceDB.filter(p=>p.catId===catId).forEach(p=>{
-      tmpl.innerHTML+=`<option value="${p.name}|${p.mat}|${p.lab}|${p.unit}">[ราคา] ${p.name}</option>`;
+  const wrap = document.getElementById('m-pricedb-wrap');
+  const list = document.getElementById('m-pricedb-list');
+
+  if(!catId){ wrap.style.display='none'; return; }
+
+  const dbItems = S.priceDB.filter(p=>p.catId===catId);
+  const cat = S.categories.find(c=>c.id===catId);
+
+  if(dbItems.length===0 && (!cat||cat.sub.length===0)){
+    wrap.style.display='none'; return;
+  }
+
+  wrap.style.display='block';
+  let html='';
+
+  // Price DB items (มีราคา)
+  dbItems.forEach(p=>{
+    const total=p.mat+p.lab;
+    html+=`<div onclick="fillFromPriceDB('${p.id}')" style="
+      background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);
+      padding:7px 10px;cursor:pointer;transition:all .15s;min-width:160px;flex:1
+    " onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--accent-dim)'"
+       onmouseout="this.style.borderColor='var(--border2)';this.style.background='var(--bg3)'">
+      <div style="font-size:12px;font-weight:500;margin-bottom:3px">${p.name}</div>
+      <div style="font-size:11px;color:var(--text2);font-family:var(--mono)">
+        ${fmt(total)} ฿/${p.unit}
+        <span style="color:var(--text3)"> (ของ ${fmt(p.mat)} + แรง ${fmt(p.lab)})</span>
+      </div>
+    </div>`;
+  });
+
+  // Sub items จาก category ที่ไม่มีใน price DB
+  if(cat){
+    const dbNames = dbItems.map(p=>p.name);
+    cat.sub.filter(s=>!dbNames.includes(s)).forEach(s=>{
+      html+=`<div onclick="fillFromSub('${s.replace(/'/g,"\\'")}')" style="
+        background:var(--bg3);border:1px dashed var(--border2);border-radius:var(--r);
+        padding:7px 10px;cursor:pointer;transition:all .15s;min-width:140px;flex:1
+      " onmouseover="this.style.borderColor='var(--text3)'"
+         onmouseout="this.style.borderColor='var(--border2)'">
+        <div style="font-size:12px;font-weight:500;margin-bottom:3px">${s}</div>
+        <div style="font-size:11px;color:var(--text3)">กรอกราคาเอง</div>
+      </div>`;
     });
   }
-  tmpl.onchange=()=>{
-    const v=tmpl.value;
-    if(!v) return;
-    if(v.includes('|')){
-      const [name,mat,lab,unit]=v.split('|');
-      document.getElementById('m-desc').value=name;
-      document.getElementById('m-mat').value=mat;
-      document.getElementById('m-lab').value=lab;
-      document.getElementById('m-unit').value=unit||'ตร.ม.';
-      calcMTotal();
-    } else {
-      document.getElementById('m-desc').value=v;
-    }
-  };
+
+  list.innerHTML = html;
+}
+
+function fillFromPriceDB(priceId){
+  const p = S.priceDB.find(x=>x.id===priceId);
+  if(!p) return;
+  document.getElementById('m-desc').value = p.name;
+  document.getElementById('m-mat').value = p.mat;
+  document.getElementById('m-lab').value = p.lab;
+  document.getElementById('m-unit').value = p.unit;
+  document.getElementById('m-total-price').value = p.mat+p.lab;
+
+  // highlight selected
+  document.querySelectorAll('#m-pricedb-list > div').forEach(el=>{
+    el.style.borderColor='var(--border2)';
+    el.style.background='var(--bg3)';
+  });
+  event.currentTarget.style.borderColor='var(--accent)';
+  event.currentTarget.style.background='var(--accent-dim)';
+
+  calcMTotal();
+  document.getElementById('m-qty').focus();
+}
+
+function fillFromSub(name){
+  document.getElementById('m-desc').value = name;
+  document.getElementById('m-mat').value = 0;
+  document.getElementById('m-lab').value = 0;
+  document.getElementById('m-total-price').value = 0;
+  calcMTotal();
+  document.getElementById('m-mat').focus();
 }
 
 function calcMTotal(){
