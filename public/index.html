@@ -242,6 +242,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
     </nav>
     <div class="sidebar-footer">
       <div style="margin-bottom:8px">v2.0 · ENGEAR CO., LTD.</div>
+      <div onclick="migrateToDatabase()" style="font-size:11px;color:var(--accent);cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:6px" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">⇪ Migrate ข้อมูลสู่ Database</div>
       <div onclick="clearData()" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:4px" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">⊘ ล้างข้อมูลทั้งหมด</div>
     </div>
   </aside>
@@ -667,6 +668,145 @@ const fmt = n => Math.round(n).toLocaleString('th-TH');
 const fmtDec = (n,d=2) => Number(n).toFixed(d);
 const uid = () => 'i'+Date.now()+Math.random().toString(36).slice(2,6);
 
+// ================================================================
+// API HELPER
+// ================================================================
+async function api(url, opts={}){
+  const res = await fetch(url, {
+    headers: {'Content-Type':'application/json'},
+    ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if(!res.ok) throw new Error(`API ${url} → ${res.status}`);
+  return res.json();
+}
+
+// ================================================================
+// UI STATE (localStorage สำหรับ state ที่ไม่ใช่ DB)
+// ================================================================
+function saveUiState(){
+  try{
+    localStorage.setItem('engear_ui', JSON.stringify({
+      selectedCats: S.selectedCats,
+      activeProjectId: S.activeProjectId
+    }));
+  }catch(e){}
+}
+
+function loadUiState(){
+  try{
+    const d = JSON.parse(localStorage.getItem('engear_ui')||'{}');
+    if(Array.isArray(d.selectedCats)) S.selectedCats = d.selectedCats;
+    if(d.activeProjectId != null) S.activeProjectId = d.activeProjectId;
+  }catch(e){}
+}
+
+// ================================================================
+// LOAD LINE ITEMS & EXTRAS PER PROJECT
+// ================================================================
+async function loadLineItemsForProject(projectId){
+  if(!projectId){ S.lineItems=[]; return; }
+  try{
+    const items = await api(`/api/projects/${projectId}/line-items`);
+    S.lineItems = items.map(x=>({
+      id: x.id, catId: x.cat_id, desc: x.desc,
+      qty: x.qty, unit: x.unit, mat: x.mat, lab: x.lab,
+      total: x.qty * ((x.mat||0)+(x.lab||0))
+    }));
+  }catch(e){ console.warn('loadLineItems fail',e); S.lineItems=[]; }
+}
+
+async function loadExtrasForProject(projectId){
+  if(!projectId) return;
+  try{
+    const e = await api(`/api/projects/${projectId}/extras`);
+    S.extras = {
+      travel: e.travel||0,
+      access: e.access_fee||0,
+      otMul: e.ot_mul||1,
+      otPct: e.ot_pct||0,
+      overhead: e.overhead??10,
+      vat: e.vat??7
+    };
+  }catch(e_){ console.warn('loadExtras fail',e_); }
+}
+
+async function saveExtras(){
+  if(!S.activeProjectId) return;
+  try{
+    await api(`/api/projects/${S.activeProjectId}/extras`, {
+      method:'PUT',
+      body:{
+        travel: S.extras.travel||0,
+        access_fee: S.extras.access||0,
+        ot_mul: S.extras.otMul||1,
+        ot_pct: S.extras.otPct||0,
+        overhead: S.extras.overhead??10,
+        vat: S.extras.vat??7
+      }
+    });
+  }catch(e){ console.warn('saveExtras fail',e); }
+}
+
+// ================================================================
+// CATEGORY FIELD UPDATE (inline edit ใน master page)
+// ================================================================
+async function updateCategoryField(ci, field, val){
+  S.categories[ci][field] = val;
+  const cat = S.categories[ci];
+  try{
+    await api(`/api/categories/${cat.id}`, {
+      method:'PUT',
+      body:{ name:cat.name, icon:cat.icon, sub:cat.sub }
+    });
+  }catch(e){ console.warn('updateCategoryField fail',e); }
+}
+
+// ================================================================
+// MIGRATE localStorage → DATABASE
+// ================================================================
+async function migrateToDatabase(){
+  let src = S;
+  try{
+    const saved = localStorage.getItem('engear_v2');
+    if(saved){ const d=JSON.parse(saved); src={...S,...d}; }
+  }catch(e){}
+
+  const payload = {
+    projects: src.projects.map(p=>({
+      id:p.id, name:p.name, quoNo:p.quoNo||p.quo_no||'',
+      client:p.client||'', company:p.company||'',
+      phone:p.phone||'', email:p.email||'', location:p.location||''
+    })),
+    categories: src.categories,
+    priceDB: src.priceDB.map(p=>({
+      id:p.id, catId:p.catId||p.cat_id,
+      name:p.name, unit:p.unit, mat:p.mat||0, lab:p.lab||0
+    })),
+    lineItems: src.lineItems.map(x=>({
+      id:x.id, projectId:x.projectId||S.activeProjectId||0,
+      catId:x.catId||x.cat_id, desc:x.desc,
+      qty:x.qty||0, unit:x.unit, mat:x.mat||0, lab:x.lab||0
+    })),
+    revisions: src.revisions.map(r=>({
+      id:r.id, projId:r.projId||r.project_id,
+      version:r.version, date:r.date, note:r.note||'',
+      items:r.items||0, total:r.total||0
+    })),
+    extras: src.extras&&S.activeProjectId ? {[S.activeProjectId]:src.extras} : {}
+  };
+
+  try{
+    const result = await api('/api/migrate',{method:'POST',body:payload});
+    toast(`Migrate สำเร็จ: ${result.imported.projects} โครงการ, ${result.imported.priceDB} ราคา`);
+    await loadData();
+    updateAllSelects();
+    renderDashboard();
+  }catch(e){
+    toast('Migrate ล้มเหลว: '+e.message,'error');
+  }
+}
+
 function toast(msg,type='success'){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -761,14 +901,20 @@ function renderProjects(){
   updateRevFilterSelect();
 }
 
-function setActiveProject(id){
+async function setActiveProject(id){
   S.activeProjectId = id;
+  await loadLineItemsForProject(id);
+  await loadExtrasForProject(id);
+  saveUiState();
   renderProjects();
   renderSummary();
 }
 
-function goBoqForProject(id){
+async function goBoqForProject(id){
   S.activeProjectId = id;
+  await loadLineItemsForProject(id);
+  await loadExtrasForProject(id);
+  saveUiState();
   nav('boq');
 }
 
@@ -779,26 +925,31 @@ function openNewProjectModal(){
   openModal('modal-project');
 }
 
-function confirmNewProject(){
+async function confirmNewProject(){
   const name = document.getElementById('np-name').value;
   if(!name){toast('กรุณากรอกชื่อโครงการ','error');return;}
-  const p = {
-    id: Date.now(),
-    name, 
-    quoNo: document.getElementById('np-quo').value,
-    client: document.getElementById('np-client').value,
-    company: document.getElementById('np-company').value,
-    phone: document.getElementById('np-phone').value,
-    email: document.getElementById('np-email').value,
-    location: document.getElementById('np-location').value
-  };
-  S.projects.push(p);
-  S.activeProjectId = p.id;
-  closeModal('modal-project');
-  renderProjects();
-  updateAllSelects();
-  toast('สร้างโครงการ "'+name+'" เรียบร้อย');
-  saveData();
+  try{
+    const p = await api('/api/projects',{
+      method:'POST',
+      body:{
+        name,
+        quo_no: document.getElementById('np-quo').value,
+        client: document.getElementById('np-client').value,
+        company: document.getElementById('np-company').value,
+        phone: document.getElementById('np-phone').value,
+        email: document.getElementById('np-email').value,
+        location: document.getElementById('np-location').value
+      }
+    });
+    const proj = {id:p.id, name:p.name, quoNo:p.quo_no||'', client:p.client||'', company:p.company||'', phone:p.phone||'', email:p.email||'', location:p.location||''};
+    S.projects.push(proj);
+    S.activeProjectId = proj.id;
+    closeModal('modal-project');
+    renderProjects();
+    updateAllSelects();
+    toast('สร้างโครงการ "'+name+'" เรียบร้อย');
+    saveUiState();
+  }catch(e){ toast('สร้างโครงการล้มเหลว: '+e.message,'error'); }
 }
 
 function editProject(id){
@@ -813,7 +964,7 @@ function editProject(id){
   document.getElementById('np-location').value = p.location||'';
   // save on confirm (overwrite)
   const btn = document.querySelector('#modal-project .btn-gold');
-  btn.onclick = ()=>{
+  btn.onclick = async ()=>{
     p.name = document.getElementById('np-name').value;
     p.quoNo = document.getElementById('np-quo').value;
     p.client = document.getElementById('np-client').value;
@@ -821,11 +972,16 @@ function editProject(id){
     p.phone = document.getElementById('np-phone').value;
     p.email = document.getElementById('np-email').value;
     p.location = document.getElementById('np-location').value;
-    closeModal('modal-project');
-    renderProjects();
-    updateAllSelects();
-    toast('แก้ไขโครงการเรียบร้อย');
-    saveData();
+    try{
+      await api(`/api/projects/${p.id}`,{
+        method:'PUT',
+        body:{name:p.name, quo_no:p.quoNo, client:p.client, company:p.company, phone:p.phone, email:p.email, location:p.location}
+      });
+      closeModal('modal-project');
+      renderProjects();
+      updateAllSelects();
+      toast('แก้ไขโครงการเรียบร้อย');
+    }catch(e){ toast('แก้ไขล้มเหลว: '+e.message,'error'); }
     btn.onclick = confirmNewProject;
   };
   openModal('modal-project');
@@ -849,7 +1005,7 @@ function renderBoqPage(){
   }
 }
 
-function onBoqProjectChange(){
+async function onBoqProjectChange(){
   const id = parseInt(document.getElementById('boq-proj').value);
   S.activeProjectId = id;
   const p = S.projects.find(x=>x.id===id);
@@ -858,6 +1014,10 @@ function onBoqProjectChange(){
     document.getElementById('boq-client').value = p.client||'';
     document.getElementById('boq-location').value = p.location||'';
   }
+  await loadLineItemsForProject(id);
+  await loadExtrasForProject(id);
+  saveUiState();
+  renderBoqTable();
 }
 
 function renderCatTags(){
@@ -922,22 +1082,29 @@ function renderBoqTable(){
   tbody.innerHTML = html;
 }
 
-function updateItem(id,field,val){
+async function updateItem(id,field,val){
   const item = S.lineItems.find(x=>x.id===id);
   if(!item) return;
   item[field] = val;
   item.total = item.qty * ((item.mat||0)+(item.lab||0));
   renderBoqTable();
   renderSummaryIfActive();
-  saveData();
+  try{
+    await api(`/api/projects/${S.activeProjectId}/line-items/${id}`,{
+      method:'PUT',
+      body:{cat_id:item.catId, desc:item.desc, qty:item.qty, unit:item.unit, mat:item.mat, lab:item.lab}
+    });
+  }catch(e){ console.warn('updateItem fail',e); }
 }
 
-function removeItem(id){
-  S.lineItems = S.lineItems.filter(x=>x.id!==id);
-  renderBoqTable();
-  renderSummaryIfActive();
-  toast('ลบรายการแล้ว');
-  saveData();
+async function removeItem(id){
+  try{
+    await api(`/api/projects/${S.activeProjectId}/line-items/${id}`,{method:'DELETE'});
+    S.lineItems = S.lineItems.filter(x=>x.id!==id);
+    renderBoqTable();
+    renderSummaryIfActive();
+    toast('ลบรายการแล้ว');
+  }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'error'); }
 }
 
 function addItemForCat(catId){
@@ -1060,10 +1227,11 @@ function splitPrice(){
   calcMTotal();
 }
 
-function confirmAddItem(){
+async function confirmAddItem(){
   const catId=parseInt(document.getElementById('m-cat').value);
   const desc=document.getElementById('m-desc').value.trim();
   if(!catId||!desc){toast('กรุณาเลือกหมวดและกรอกชื่อรายการ','error');return;}
+  if(!S.activeProjectId){toast('กรุณาเลือกโครงการก่อนเพิ่มรายการ','error');return;}
   const item={
     id:uid(),catId,desc,
     qty:parseFloat(document.getElementById('m-qty').value)||1,
@@ -1073,13 +1241,19 @@ function confirmAddItem(){
     total:0
   };
   item.total=item.qty*(item.mat+item.lab);
-  S.lineItems.push(item);
-  if(!S.selectedCats.includes(catId)) S.selectedCats.push(catId);
-  closeModal('modal-lineitem');
-  renderCatTags();
-  renderBoqTable();
-  toast('เพิ่มรายการ "'+desc+'" แล้ว');
-  saveData();
+  try{
+    await api(`/api/projects/${S.activeProjectId}/line-items`,{
+      method:'POST',
+      body:{id:item.id, cat_id:catId, desc:item.desc, qty:item.qty, unit:item.unit, mat:item.mat, lab:item.lab}
+    });
+    S.lineItems.push(item);
+    if(!S.selectedCats.includes(catId)) S.selectedCats.push(catId);
+    closeModal('modal-lineitem');
+    renderCatTags();
+    renderBoqTable();
+    toast('เพิ่มรายการ "'+desc+'" แล้ว');
+    saveUiState();
+  }catch(e){ toast('เพิ่มรายการล้มเหลว: '+e.message,'error'); }
 }
 
 // ================================================================
@@ -1118,6 +1292,7 @@ function calcExtras(){
     else otNote.innerHTML='<span style="color:var(--green)">ไม่มีค่า OT</span>';
   }
   renderExtrasCalc();
+  saveExtras();
 }
 
 function renderExtrasCalc(){
@@ -1279,14 +1454,14 @@ function saveRevision(){
   openModal('modal-revision');
 }
 
-function confirmSaveRevision(){
+async function confirmSaveRevision(){
   if(!S.activeProjectId){toast('กรุณาเลือกโครงการก่อน','error');return;}
   const note=document.getElementById('rev-note-input').value;
   const p=S.projects.find(x=>x.id===S.activeProjectId);
   const existing=S.revisions.filter(r=>r.projId===S.activeProjectId);
   const lastVer=existing.length>0?existing[existing.length-1].version:'';
   const nextRev=lastVer?'R'+(parseInt(lastVer.slice(1)||0)+1):'R0';
-  S.revisions.push({
+  const rev={
     id:uid(),
     projId:S.activeProjectId,
     version:nextRev,
@@ -1294,11 +1469,18 @@ function confirmSaveRevision(){
     note: note||'บันทึก revision',
     items:S.lineItems.length,
     total:Math.round(calcNetTotal())
-  });
+  };
+  try{
+    await api('/api/revisions',{
+      method:'POST',
+      body:{id:rev.id, project_id:rev.projId, version:rev.version, date:rev.date, note:rev.note, items:rev.items, total:rev.total}
+    });
+    S.revisions.push(rev);
+  }catch(e){ toast('บันทึก revision ล้มเหลว: '+e.message,'error'); return; }
   closeModal('modal-revision');
   updateRevFilterSelect();
+  renderRevisions();
   toast(`บันทึก ${p?.quoNo||''}-${nextRev} เรียบร้อย`);
-  saveData();
 }
 
 function updateRevFilterSelect(){
@@ -1359,20 +1541,26 @@ function openPriceModal(){
   openModal('modal-price');
 }
 
-function confirmAddPrice(){
+async function confirmAddPrice(){
   const name=document.getElementById('pm-name').value.trim();
   const catId=parseInt(document.getElementById('pm-cat').value);
   if(!name||!catId){toast('กรุณากรอกชื่อและเลือกหมวด','error');return;}
-  S.priceDB.push({
+  const item={
     id:'p'+Date.now(),catId,name,
     unit:document.getElementById('pm-unit').value,
     mat:parseFloat(document.getElementById('pm-mat').value)||0,
     lab:parseFloat(document.getElementById('pm-lab').value)||0
-  });
-  closeModal('modal-price');
-  renderPriceDB();
-  toast('เพิ่มราคา "'+name+'" แล้ว');
-  saveData();
+  };
+  try{
+    await api('/api/price-db',{
+      method:'POST',
+      body:{id:item.id, cat_id:catId, name:item.name, unit:item.unit, mat:item.mat, lab:item.lab}
+    });
+    S.priceDB.push(item);
+    closeModal('modal-price');
+    renderPriceDB();
+    toast('เพิ่มราคา "'+name+'" แล้ว');
+  }catch(e){ toast('เพิ่มราคาล้มเหลว: '+e.message,'error'); }
 }
 
 function editPriceItem(id){
@@ -1386,28 +1574,35 @@ function editPriceItem(id){
   pm.innerHTML='<option value="">-- เลือกหมวด --</option>'+S.categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   pm.value=p.catId;
   const btn=document.querySelector('#modal-price .btn-gold');
-  btn.onclick=()=>{
+  btn.onclick=async ()=>{
     p.name=document.getElementById('pm-name').value;
     p.catId=parseInt(document.getElementById('pm-cat').value);
     p.unit=document.getElementById('pm-unit').value;
     p.mat=parseFloat(document.getElementById('pm-mat').value)||0;
     p.lab=parseFloat(document.getElementById('pm-lab').value)||0;
-    closeModal('modal-price');
-    renderPriceDB();
-    toast('แก้ไขราคาแล้ว');
-    saveData();
+    try{
+      await api(`/api/price-db/${p.id}`,{
+        method:'PUT',
+        body:{cat_id:p.catId, name:p.name, unit:p.unit, mat:p.mat, lab:p.lab}
+      });
+      closeModal('modal-price');
+      renderPriceDB();
+      toast('แก้ไขราคาแล้ว');
+    }catch(e){ toast('แก้ไขล้มเหลว: '+e.message,'error'); }
     btn.onclick=confirmAddPrice;
   };
   openModal('modal-price');
 }
 
-function deletePriceItem(id){
+async function deletePriceItem(id){
   const p=S.priceDB.find(x=>x.id===id);
   if(!p) return;
-  S.priceDB=S.priceDB.filter(x=>x.id!==id);
-  renderPriceDB();
-  toast('ลบ "'+p.name+'" แล้ว');
-  saveData();
+  try{
+    await api(`/api/price-db/${id}`,{method:'DELETE'});
+    S.priceDB=S.priceDB.filter(x=>x.id!==id);
+    renderPriceDB();
+    toast('ลบ "'+p.name+'" แล้ว');
+  }catch(e){ toast('ลบล้มเหลว: '+e.message,'error'); }
 }
 
 // ================================================================
@@ -1419,8 +1614,8 @@ function renderMaster(){
   el.innerHTML=S.categories.map((cat,ci)=>`
     <div class="card">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-        <input value="${cat.icon}" onchange="S.categories[${ci}].icon=this.value" style="width:40px;text-align:center;font-size:18px">
-        <input value="${cat.name}" onchange="S.categories[${ci}].name=this.value" style="flex:1;font-weight:500">
+        <input value="${cat.icon}" onchange="updateCategoryField(${ci},'icon',this.value)" style="width:40px;text-align:center;font-size:18px">
+        <input value="${cat.name}" onchange="updateCategoryField(${ci},'name',this.value)" style="flex:1;font-weight:500">
         <button class="btn btn-sm btn-red" onclick="removeCategory(${ci})">ลบหมวด</button>
       </div>
       <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">รายการย่อย</div>
@@ -1437,38 +1632,49 @@ function renderMaster(){
   `).join('');
 }
 
-function addCategoryModal(){
+async function addCategoryModal(){
   const name=prompt('ชื่อหมวดงานใหม่:');
   if(!name) return;
-  S.categories.push({id:Date.now(),name,icon:'📦',sub:[]});
-  renderMaster();
-  toast('เพิ่มหมวด "'+name+'" แล้ว');
-  saveData();
+  try{
+    const cat=await api('/api/categories',{method:'POST',body:{name,icon:'📦',sub:[]}});
+    S.categories.push({id:cat.id,name:cat.name,icon:cat.icon,sub:cat.sub});
+    renderMaster();
+    toast('เพิ่มหมวด "'+name+'" แล้ว');
+  }catch(e){ toast('เพิ่มหมวดล้มเหลว: '+e.message,'error'); }
 }
 
-function removeCategory(i){
+async function removeCategory(i){
   if(!confirm('ลบหมวด "'+S.categories[i].name+'" ?')) return;
   const id=S.categories[i].id;
-  S.categories.splice(i,1);
-  S.selectedCats=S.selectedCats.filter(x=>x!==id);
-  renderMaster();
-  renderCatTags();
-  renderBoqTable();
-  saveData();
+  try{
+    await api(`/api/categories/${id}`,{method:'DELETE'});
+    S.categories.splice(i,1);
+    S.selectedCats=S.selectedCats.filter(x=>x!==id);
+    saveUiState();
+    renderMaster();
+    renderCatTags();
+    renderBoqTable();
+  }catch(e){ toast('ลบหมวดล้มเหลว: '+e.message,'error'); }
 }
 
-function addSub(ci){
+async function addSub(ci){
   const s=prompt('ชื่อรายการย่อย:');
   if(!s) return;
   S.categories[ci].sub.push(s);
-  renderMaster();
-  saveData();
+  const cat=S.categories[ci];
+  try{
+    await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
+    renderMaster();
+  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
 }
 
-function removeSub(ci,si){
+async function removeSub(ci,si){
   S.categories[ci].sub.splice(si,1);
-  renderMaster();
-  saveData();
+  const cat=S.categories[ci];
+  try{
+    await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
+    renderMaster();
+  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
 }
 
 // ================================================================
@@ -1959,59 +2165,73 @@ function updateAllSelects(){
 }
 
 // ================================================================
-// LOCAL STORAGE
+// LOAD / SAVE
 // ================================================================
-function saveData(){
+async function loadData(){
   try{
-    localStorage.setItem('engear_v2',JSON.stringify({
-      projects:S.projects,
-      categories:S.categories,
-      priceDB:S.priceDB,
-      lineItems:S.lineItems,
-      selectedCats:S.selectedCats,
-      activeProjectId:S.activeProjectId,
-      revisions:S.revisions,
-      extras:S.extras
+    const [projects, categories, priceDB, revisions] = await Promise.all([
+      api('/api/projects'),
+      api('/api/categories'),
+      api('/api/price-db'),
+      api('/api/revisions')
+    ]);
+    if(projects.length) S.projects = projects.map(p=>({
+      id:p.id, name:p.name, quoNo:p.quo_no||'',
+      client:p.client||'', company:p.company||'',
+      phone:p.phone||'', email:p.email||'', location:p.location||''
     }));
-  }catch(e){console.warn('Save failed',e);}
-}
-
-function loadData(){
-  try{
-    const saved=localStorage.getItem('engear_v2');
-    if(saved){
-      const d=JSON.parse(saved);
-      // merge: ถ้า localStorage มีข้อมูล ใช้ของ localStorage
-      // ถ้าไม่มี (ครั้งแรก) ใช้ default ใน S ที่กำหนดไว้แล้ว
-      if(d.projects?.length) S.projects=d.projects;
-      if(d.categories?.length) S.categories=d.categories;
-      if(d.priceDB?.length) S.priceDB=d.priceDB;
-      if(Array.isArray(d.lineItems)) S.lineItems=d.lineItems;
-      if(Array.isArray(d.selectedCats)) S.selectedCats=d.selectedCats;
-      if(d.activeProjectId!=null) S.activeProjectId=d.activeProjectId;
-      if(d.revisions?.length) S.revisions=d.revisions;
-      if(d.extras) S.extras={...S.extras,...d.extras};
-    } else {
-      // ครั้งแรกที่เปิด — save default data ลง localStorage เลย
-      saveData();
+    if(categories.length) S.categories = categories;
+    if(priceDB.length) S.priceDB = priceDB.map(p=>({
+      id:p.id, catId:p.cat_id, name:p.name,
+      unit:p.unit, mat:p.mat||0, lab:p.lab||0
+    }));
+    if(revisions.length) S.revisions = revisions.map(r=>({
+      id:r.id, projId:r.project_id, version:r.version,
+      date:r.date, note:r.note, items:r.items, total:r.total
+    }));
+    loadUiState();
+    if(S.activeProjectId){
+      await loadLineItemsForProject(S.activeProjectId);
+      await loadExtrasForProject(S.activeProjectId);
     }
   }catch(e){
-    console.warn('Load failed, using defaults',e);
-    saveData();
+    console.warn('API load failed, using localStorage fallback',e);
+    try{
+      const saved = localStorage.getItem('engear_v2');
+      if(saved){
+        const d = JSON.parse(saved);
+        if(d.projects?.length) S.projects=d.projects;
+        if(d.categories?.length) S.categories=d.categories;
+        if(d.priceDB?.length) S.priceDB=d.priceDB;
+        if(Array.isArray(d.lineItems)) S.lineItems=d.lineItems;
+        if(Array.isArray(d.selectedCats)) S.selectedCats=d.selectedCats;
+        if(d.activeProjectId!=null) S.activeProjectId=d.activeProjectId;
+        if(d.revisions?.length) S.revisions=d.revisions;
+        if(d.extras) S.extras={...S.extras,...d.extras};
+      }
+    }catch(e2){}
   }
+}
+
+// saveData เหลือแค่บันทึก UI state
+function saveData(){
+  saveUiState();
 }
 
 function clearData(){
   if(confirm('ล้างข้อมูลทั้งหมดและเริ่มใหม่?')){
     localStorage.removeItem('engear_v2');
+    localStorage.removeItem('engear_ui');
     location.reload();
   }
 }
 
 // INIT
-loadData();
-updateAllSelects();
-renderDashboard();
+(async()=>{
+  await loadData();
+  updateAllSelects();
+  renderDashboard();
+})();
 </script>
 </body>
 </html>
