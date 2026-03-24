@@ -1,0 +1,21 @@
+{
+  "name": "engear-quotation",
+  "version": "1.0.0",
+  "description": "ระบบสร้าง BOQ / Quotation สำหรับงานตกแต่งภายใน",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:44561/git/nuisait/engear-quotation"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^12.8.0",
+    "express": "^5.2.1"
+  }
+}
