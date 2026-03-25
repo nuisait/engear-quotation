@@ -8,4 +8,13 @@ const pool = new Pool({
     : false
 });
 
+// SQL to run in Supabase SQL Editor to create users table:
+// CREATE TABLE IF NOT EXISTS users (
+//   id            SERIAL PRIMARY KEY,
+//   username      TEXT UNIQUE NOT NULL,
+//   password_hash TEXT NOT NULL,
+//   role          TEXT DEFAULT 'viewer',
+//   created_at    TIMESTAMP DEFAULT NOW()
+// );
+
 module.exports = pool;

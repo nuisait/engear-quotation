@@ -215,9 +215,54 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   .shell { grid-template-columns: 1fr; }
   .sidebar { display: none; }
 }
+
+/* LOGIN SCREEN */
+.login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.login-box { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--r2); padding: 40px; width: 360px; }
+.login-logo { font-family: var(--mono); font-size: 22px; font-weight: 500; color: var(--accent); letter-spacing: 3px; margin-bottom: 6px; }
+.login-sub { font-size: 11px; color: var(--text3); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 32px; }
+.login-title { font-size: 14px; font-weight: 500; margin-bottom: 20px; color: var(--text2); }
+.login-error { background: var(--red-dim); border: 1px solid rgba(248,113,113,.3); border-radius: var(--r); padding: 8px 12px; font-size: 12px; color: var(--red); margin-bottom: 14px; display: none; }
+
+/* UNSAVED INDICATOR */
+.unsaved-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; margin-left: 6px; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.unsaved-badge { display: none; align-items: center; gap: 6px; padding: 5px 12px; background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); border-radius: 99px; font-size: 12px; color: #f59e0b; }
+.unsaved-badge.show { display: flex; }
+
+/* ANALYTICS BARS */
+.analytics-bar { height: 6px; background: var(--accent-dim); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.analytics-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .5s; }
+
+/* USER PILL */
+.user-pill { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--bg3); border-radius: 99px; font-size: 11px; color: var(--text2); margin-bottom: 8px; }
+.user-pill .role { color: var(--accent); font-size: 10px; font-family: var(--mono); }
 </style>
 </head>
 <body>
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">ENGEAR</div>
+    <div class="login-sub">Quotation System</div>
+    <div class="login-title">เข้าสู่ระบบ</div>
+    <div id="login-error" class="login-error"></div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>ชื่อผู้ใช้</label>
+      <input id="login-username" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')loginSubmit()">
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label>รหัสผ่าน</label>
+      <input id="login-password" type="password" placeholder="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')loginSubmit()">
+    </div>
+    <button class="btn btn-gold" style="width:100%;padding:10px" onclick="loginSubmit()" id="login-btn">เข้าสู่ระบบ</button>
+    <div id="first-run-msg" style="display:none;margin-top:16px;padding:12px;background:var(--bg3);border-radius:var(--r);font-size:12px;color:var(--text2)">
+      ยังไม่มีผู้ใช้ในระบบ — กรุณาสร้างบัญชีแรก (จะได้สิทธิ์ Admin อัตโนมัติ)
+      <button class="btn btn-green" style="width:100%;margin-top:10px" onclick="registerSubmit()">สร้างบัญชี Admin</button>
+    </div>
+  </div>
+</div>
+
 <div class="shell">
   <!-- SIDEBAR -->
   <aside class="sidebar">
@@ -241,9 +286,11 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="nav-item" onclick="nav('master')"><span class="nav-icon">◧</span> Master Template</div>
     </nav>
     <div class="sidebar-footer">
-      <div style="margin-bottom:8px">v2.0 · ENGEAR CO., LTD.</div>
+      <div id="user-pill-wrap"></div>
+      <div style="margin-bottom:8px;font-size:11px;color:var(--text3)">v2.1 · ENGEAR CO., LTD.</div>
       <div onclick="migrateToDatabase()" style="font-size:11px;color:var(--accent);cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:6px" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">⇪ Migrate ข้อมูลสู่ Database</div>
-      <div onclick="clearData()" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:4px" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">⊘ ล้างข้อมูลทั้งหมด</div>
+      <div onclick="nav('users')" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:6px" id="manage-users-link" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">◎ จัดการผู้ใช้</div>
+      <div onclick="logout()" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:4px" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">⊘ ออกจากระบบ</div>
     </div>
   </aside>
 
@@ -260,7 +307,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       </div>
       <div class="content">
         <div class="stats-row" id="dash-stats"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
           <div class="card">
             <div class="card-title">โครงการล่าสุด</div>
             <div id="dash-recent-projects"></div>
@@ -269,6 +316,10 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
             <div class="card-title">Revision ล่าสุด</div>
             <div id="dash-recent-revisions" class="rev-timeline"></div>
           </div>
+        </div>
+        <div class="card">
+          <div class="card-title">มูลค่าโครงการ (Top 5) <span style="font-size:11px;font-weight:400">เรียงตามยอดล่าสุด</span></div>
+          <div id="dash-analytics"></div>
         </div>
       </div>
     </div>
@@ -291,6 +342,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="page-header">
         <div><div class="page-title">BOQ Builder</div><div class="page-subtitle">Bill of Quantities — รายละเอียดงานและราคา</div></div>
         <div class="header-actions">
+          <div id="unsaved-badge" class="unsaved-badge"><span class="unsaved-dot"></span>มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</div>
           <button class="btn" onclick="addLineItemFromModal()">+ เพิ่มรายการ</button>
           <button class="btn btn-green" onclick="saveRevision()">💾 บันทึก Revision</button>
           <button class="btn btn-gold" onclick="exportExcel()">↓ Export Excel</button>
@@ -429,8 +481,9 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="page-header">
         <div><div class="page-title">สรุป Quotation</div><div class="page-subtitle">ยอดรวมและรายละเอียดทั้งหมด</div></div>
         <div class="header-actions">
+          <button class="btn" onclick="sendEmailModal()">✉ ส่ง Email</button>
           <button class="btn btn-green" onclick="exportExcel()">↓ Export Excel</button>
-          <button class="btn btn-gold" onclick="printQuotation()">🖨 Print</button>
+          <button class="btn btn-gold" onclick="printQuotation()">📄 Print / PDF</button>
         </div>
       </div>
       <div class="content" id="summary-content"></div>
@@ -478,6 +531,17 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
         </div>
         <div id="price-db-list"></div>
       </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="page-users" class="page">
+      <div class="page-header">
+        <div><div class="page-title">จัดการผู้ใช้</div><div class="page-subtitle">Admin เท่านั้นที่เห็นหน้านี้</div></div>
+        <div class="header-actions">
+          <button class="btn btn-gold" onclick="openAddUserModal()">+ เพิ่มผู้ใช้</button>
+        </div>
+      </div>
+      <div class="content" id="users-content"></div>
     </div>
 
     <!-- MASTER TEMPLATE -->
@@ -599,6 +663,54 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   </div>
 </div>
 
+<!-- EMAIL MODAL -->
+<div id="modal-email" class="overlay">
+  <div class="modal">
+    <div class="modal-title">ส่ง Quotation ทาง Email <span class="close" onclick="closeModal('modal-email')">×</span></div>
+    <div class="form-group" style="margin-bottom:12px"><label>ส่งถึง (Email)</label><input id="email-to" placeholder="client@company.com"></div>
+    <div class="form-group" style="margin-bottom:12px"><label>หัวข้อ</label><input id="email-subject" placeholder="Quotation จาก ENGEAR"></div>
+    <div class="form-group" style="margin-bottom:16px"><label>ข้อความเพิ่มเติม</label><textarea id="email-body" rows="4" placeholder="รายละเอียดเพิ่มเติม..."></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal('modal-email')">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="confirmSendEmail()">ส่ง Email</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD USER MODAL -->
+<div id="modal-add-user" class="overlay">
+  <div class="modal">
+    <div class="modal-title">เพิ่มผู้ใช้ <span class="close" onclick="closeModal('modal-add-user')">×</span></div>
+    <div class="form-group" style="margin-bottom:12px"><label>ชื่อผู้ใช้</label><input id="au-username" placeholder="username"></div>
+    <div class="form-group" style="margin-bottom:12px"><label>รหัสผ่าน</label><input type="password" id="au-password" placeholder="อย่างน้อย 6 ตัวอักษร"></div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>สิทธิ์</label>
+      <select id="au-role">
+        <option value="viewer">Viewer — ดูอย่างเดียว</option>
+        <option value="editor">Editor — แก้ไขได้</option>
+        <option value="admin">Admin — ทุกสิทธิ์</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal('modal-add-user')">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="confirmAddUser()">สร้างผู้ใช้</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div id="modal-change-pw" class="overlay">
+  <div class="modal">
+    <div class="modal-title">เปลี่ยนรหัสผ่าน <span class="close" onclick="closeModal('modal-change-pw')">×</span></div>
+    <div class="form-group" style="margin-bottom:12px"><label>รหัสผ่านเดิม</label><input type="password" id="pw-current" placeholder="รหัสผ่านเดิม"></div>
+    <div class="form-group" style="margin-bottom:16px"><label>รหัสผ่านใหม่</label><input type="password" id="pw-new" placeholder="อย่างน้อย 6 ตัวอักษร"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal('modal-change-pw')">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="confirmChangePw()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- SAVE REVISION MODAL -->
 <div id="modal-revision" class="overlay">
   <div class="modal">
@@ -612,6 +724,77 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 </div>
 
 <script>
+// ================================================================
+// AUTH STATE
+// ================================================================
+let AUTH = {
+  token: localStorage.getItem('engear_token'),
+  user: null
+};
+
+async function loginSubmit(){
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  if (!username || !password) { errEl.textContent='กรุณากรอกชื่อผู้ใช้และรหัสผ่าน'; errEl.style.display='block'; return; }
+  btn.textContent='กำลังเข้าสู่ระบบ...'; btn.disabled=true;
+  try {
+    const res = await fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login ล้มเหลว');
+    AUTH.token = data.token; AUTH.user = data.user;
+    localStorage.setItem('engear_token', data.token);
+    document.getElementById('login-screen').style.display = 'none';
+    await initApp();
+  } catch(e) {
+    errEl.textContent = e.message; errEl.style.display='block';
+  } finally { btn.textContent='เข้าสู่ระบบ'; btn.disabled=false; }
+}
+
+async function registerSubmit(){
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  if (!username || !password) { errEl.textContent='กรุณากรอกชื่อผู้ใช้และรหัสผ่าน'; errEl.style.display='block'; return; }
+  try {
+    const res = await fetch('/api/auth/register', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'สร้างบัญชีล้มเหลว');
+    toast('สร้างบัญชี Admin "'+username+'" สำเร็จ — กรุณา Login');
+    document.getElementById('first-run-msg').style.display='none';
+  } catch(e) { errEl.textContent = e.message; errEl.style.display='block'; }
+}
+
+function logout(){
+  AUTH.token = null; AUTH.user = null;
+  localStorage.removeItem('engear_token');
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-username').value='';
+  document.getElementById('login-password').value='';
+  document.getElementById('login-error').style.display='none';
+  document.getElementById('first-run-msg').style.display='none';
+}
+
+function renderUserPill(){
+  const wrap = document.getElementById('user-pill-wrap');
+  if (!wrap || !AUTH.user) return;
+  const roleLabel = { admin:'Admin', editor:'Editor', viewer:'Viewer' }[AUTH.user.role] || AUTH.user.role;
+  wrap.innerHTML = `<div class="user-pill">
+    <span>👤 ${AUTH.user.username}</span>
+    <span class="role">${roleLabel}</span>
+    <span style="cursor:pointer;margin-left:4px;color:var(--text3)" onclick="openModal('modal-change-pw')" title="เปลี่ยนรหัสผ่าน">🔑</span>
+  </div>`;
+  const manageLink = document.getElementById('manage-users-link');
+  if (manageLink) manageLink.style.display = AUTH.user.role === 'admin' ? 'flex' : 'none';
+}
+
 // ================================================================
 // STATE
 // ================================================================
@@ -672,11 +855,13 @@ const uid = () => 'i'+Date.now()+Math.random().toString(36).slice(2,6);
 // API HELPER
 // ================================================================
 async function api(url, opts={}){
+  const headers = { 'Content-Type':'application/json' };
+  if (AUTH.token) headers['Authorization'] = 'Bearer ' + AUTH.token;
   const res = await fetch(url, {
-    headers: {'Content-Type':'application/json'},
-    ...opts,
+    headers, ...opts,
     body: opts.body ? JSON.stringify(opts.body) : undefined
   });
+  if (res.status === 401) { logout(); return; }
   if(!res.ok) throw new Error(`API ${url} → ${res.status}`);
   return res.json();
 }
@@ -823,7 +1008,9 @@ function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 function nav(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
+  const el = document.getElementById('page-'+page);
+  if (!el) return;
+  el.classList.add('active');
   const map = {dashboard:0,projects:1,boq:2,extras:3,summary:4,revisions:5,pricedb:6,master:7};
   document.querySelectorAll('.nav-item')[map[page]]?.classList.add('active');
   if(page==='dashboard') renderDashboard();
@@ -834,6 +1021,7 @@ function nav(page){
   if(page==='pricedb') renderPriceDB();
   if(page==='master') renderMaster();
   if(page==='extras') calcExtras();
+  if(page==='users') renderUsers();
 }
 
 // ================================================================
@@ -856,6 +1044,7 @@ function renderDashboard(){
       <span class="badge badge-gold" style="cursor:pointer">${p.quoNo}</span>
     </div>
   `).join('');
+  renderDashboardAnalytics();
   document.getElementById('dash-recent-revisions').innerHTML = S.revisions.slice(-4).reverse().map((r,i)=>{
     const p = S.projects.find(x=>x.id===r.projId);
     return `<div class="rev-item">
@@ -894,6 +1083,8 @@ function renderProjects(){
       <div style="display:flex;gap:6px;margin-top:10px">
         <button class="btn btn-sm btn-gold" onclick="event.stopPropagation();goBoqForProject(${p.id})">เปิด BOQ</button>
         <button class="btn btn-sm" onclick="event.stopPropagation();editProject(${p.id})">แก้ไข</button>
+        <button class="btn btn-sm" onclick="event.stopPropagation();duplicateProject(${p.id})" title="คัดลอกโครงการ">⧉</button>
+        <button class="btn btn-sm btn-red" onclick="event.stopPropagation();deleteProject(${p.id})" title="ลบโครงการ">✕</button>
       </div>
     </div>`;
   }).join('');
@@ -1087,6 +1278,7 @@ async function updateItem(id,field,val){
   if(!item) return;
   item[field] = val;
   item.total = item.qty * ((item.mat||0)+(item.lab||0));
+  markDirty();
   renderBoqTable();
   renderSummaryIfActive();
   try{
@@ -1478,6 +1670,7 @@ async function confirmSaveRevision(){
     S.revisions.push(rev);
   }catch(e){ toast('บันทึก revision ล้มเหลว: '+e.message,'error'); return; }
   closeModal('modal-revision');
+  markClean();
   updateRevFilterSelect();
   renderRevisions();
   toast(`บันทึก ${p?.quoNo||''}-${nextRev} เรียบร้อย`);
@@ -2169,12 +2362,13 @@ function updateAllSelects(){
 // ================================================================
 async function loadData(){
   try{
-    const [projects, categories, priceDB, revisions] = await Promise.all([
+    const [projectsRes, categories, priceDB, revisions] = await Promise.all([
       api('/api/projects'),
       api('/api/categories'),
       api('/api/price-db'),
       api('/api/revisions')
     ]);
+    const projects = projectsRes?.data || projectsRes || [];
     if(projects.length) S.projects = projects.map(p=>({
       id:p.id, name:p.name, quoNo:p.quo_no||'',
       client:p.client||'', company:p.company||'',
@@ -2226,11 +2420,214 @@ function clearData(){
   }
 }
 
+// ================================================================
+// UNSAVED CHANGES TRACKING
+// ================================================================
+let _isDirty = false;
+function markDirty(){
+  _isDirty = true;
+  const badge = document.getElementById('unsaved-badge');
+  if (badge) badge.classList.add('show');
+}
+function markClean(){
+  _isDirty = false;
+  const badge = document.getElementById('unsaved-badge');
+  if (badge) badge.classList.remove('show');
+}
+
+// ================================================================
+// DUPLICATE PROJECT
+// ================================================================
+async function duplicateProject(id){
+  const p = S.projects.find(x=>x.id===id);
+  if (!p) return;
+  if (!confirm(`คัดลอกโครงการ "${p.name}" ?`)) return;
+  try {
+    const newProj = await api(`/api/projects/${id}/duplicate`, { method:'POST' });
+    S.projects.push({
+      id: newProj.id, name: newProj.name, quoNo: newProj.quo_no||'',
+      client: newProj.client||'', company: newProj.company||'',
+      phone: newProj.phone||'', email: newProj.email||'', location: newProj.location||''
+    });
+    renderProjects();
+    updateAllSelects();
+    toast(`คัดลอก "${p.name}" เรียบร้อย — ดูที่ด้านล่างสุดของรายการ`);
+  } catch(e) { toast('คัดลอกล้มเหลว: '+e.message,'error'); }
+}
+
+// ================================================================
+// DELETE PROJECT
+// ================================================================
+async function deleteProject(id){
+  const p = S.projects.find(x=>x.id===id);
+  if (!p || !confirm(`ลบโครงการ "${p.name}" ? (ข้อมูลทั้งหมดจะหายถาวร)`)) return;
+  try {
+    await api(`/api/projects/${id}`, { method:'DELETE' });
+    S.projects = S.projects.filter(x=>x.id!==id);
+    if (S.activeProjectId === id) { S.activeProjectId=null; S.lineItems=[]; saveUiState(); }
+    renderProjects();
+    updateAllSelects();
+    toast(`ลบ "${p.name}" แล้ว`);
+  } catch(e) { toast('ลบล้มเหลว: '+e.message,'error'); }
+}
+
+// ================================================================
+// SEND EMAIL
+// ================================================================
+function sendEmailModal(){
+  const proj = S.projects.find(x=>x.id===S.activeProjectId);
+  document.getElementById('email-to').value = proj?.email||'';
+  document.getElementById('email-subject').value = `ใบเสนอราคา ${proj?.quoNo||''} — ${proj?.name||''}`;
+  document.getElementById('email-body').value = `เรียนคุณ ${proj?.client||''},\n\nขอส่งใบเสนอราคาสำหรับโครงการ "${proj?.name||''}" ตามที่แนบมา\n\nขอบคุณครับ/ค่ะ\nทีมงาน ENGEAR`;
+  openModal('modal-email');
+}
+
+async function confirmSendEmail(){
+  const to = document.getElementById('email-to').value.trim();
+  const subject = document.getElementById('email-subject').value.trim();
+  const body = document.getElementById('email-body').value;
+  if (!to || !subject) { toast('กรุณากรอก Email และหัวข้อ','error'); return; }
+  try {
+    const result = await api('/api/email/send', {
+      method:'POST',
+      body:{ to, subject, text: body, html: `<pre style="font-family:sans-serif">${body}</pre>` }
+    });
+    closeModal('modal-email');
+    toast(result.message || 'ส่ง Email เรียบร้อย');
+  } catch(e) { toast('ส่ง Email ล้มเหลว: '+e.message,'error'); }
+}
+
+// ================================================================
+// USERS MANAGEMENT
+// ================================================================
+async function renderUsers(){
+  if (!AUTH.user || AUTH.user.role !== 'admin') {
+    document.getElementById('users-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div class="empty-text">ต้องมีสิทธิ์ Admin</div></div>';
+    return;
+  }
+  try {
+    const users = await api('/api/auth/users');
+    document.getElementById('users-content').innerHTML = `
+      <div class="card">
+        <div class="card-title">ผู้ใช้ทั้งหมด <span>${users.length} คน</span></div>
+        <table class="boq-table">
+          <thead><tr><th>Username</th><th>Role</th><th>สร้างเมื่อ</th><th></th></tr></thead>
+          <tbody>
+            ${users.map(u=>`<tr>
+              <td style="font-weight:500">${u.username}</td>
+              <td><span class="badge ${u.role==='admin'?'badge-gold':u.role==='editor'?'badge-green':'badge-gray'}">${u.role}</span></td>
+              <td style="color:var(--text3);font-size:12px">${u.created_at?.slice(0,10)||'-'}</td>
+              <td>${u.id!==AUTH.user.id?`<button class="btn btn-xs btn-red" onclick="deleteUser(${u.id},'${u.username}')">ลบ</button>`:''}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } catch(e) { toast('โหลด users ล้มเหลว: '+e.message,'error'); }
+}
+
+function openAddUserModal(){
+  ['au-username','au-password'].forEach(id=>document.getElementById(id).value='');
+  openModal('modal-add-user');
+}
+
+async function confirmAddUser(){
+  const username = document.getElementById('au-username').value.trim();
+  const password = document.getElementById('au-password').value;
+  const role = document.getElementById('au-role').value;
+  if (!username||!password){toast('กรุณากรอกข้อมูลให้ครบ','error');return;}
+  try {
+    await api('/api/auth/register',{method:'POST',body:{username,password,role}});
+    closeModal('modal-add-user');
+    toast(`สร้างผู้ใช้ "${username}" (${role}) เรียบร้อย`);
+    renderUsers();
+  } catch(e){toast('สร้างผู้ใช้ล้มเหลว: '+e.message,'error');}
+}
+
+async function deleteUser(id, username){
+  if (!confirm(`ลบผู้ใช้ "${username}" ?`)) return;
+  try {
+    await api(`/api/auth/users/${id}`,{method:'DELETE'});
+    toast(`ลบ "${username}" แล้ว`);
+    renderUsers();
+  } catch(e){toast('ลบล้มเหลว: '+e.message,'error');}
+}
+
+async function confirmChangePw(){
+  const current = document.getElementById('pw-current').value;
+  const newPw = document.getElementById('pw-new').value;
+  if (!current||!newPw){toast('กรุณากรอกข้อมูลให้ครบ','error');return;}
+  try {
+    await api('/api/auth/password',{method:'PUT',body:{current_password:current,new_password:newPw}});
+    closeModal('modal-change-pw');
+    toast('เปลี่ยนรหัสผ่านเรียบร้อย');
+  } catch(e){toast('เปลี่ยนรหัสผ่านล้มเหลว: '+e.message,'error');}
+}
+
+// ================================================================
+// ANALYTICS — Enhanced Dashboard
+// ================================================================
+function renderDashboardAnalytics(){
+  // Project totals bar chart (top 5)
+  const projTotals = S.projects.map(p=>{
+    const revs = S.revisions.filter(r=>r.projId===p.id);
+    const latest = revs[revs.length-1];
+    return { name:p.name, quoNo:p.quoNo, total: latest?.total||0 };
+  }).sort((a,b)=>b.total-a.total).slice(0,5);
+  const maxTotal = Math.max(...projTotals.map(x=>x.total), 1);
+  const el = document.getElementById('dash-analytics');
+  if (!el) return;
+  el.innerHTML = projTotals.length ? projTotals.map(p=>`
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%">${p.name}</span>
+        <span style="font-family:var(--mono);color:var(--accent)">${fmt(p.total)} ฿</span>
+      </div>
+      <div class="analytics-bar"><div class="analytics-bar-fill" style="width:${(p.total/maxTotal*100).toFixed(1)}%"></div></div>
+    </div>
+  `).join('') : '<div style="color:var(--text3);font-size:12px">ยังไม่มีข้อมูล revision</div>';
+}
+
+// ================================================================
 // INIT
-(async()=>{
+// ================================================================
+async function initApp(){
   await loadData();
   updateAllSelects();
   renderDashboard();
+  renderUserPill();
+  // Add analytics section to dashboard
+  setTimeout(renderDashboardAnalytics, 100);
+}
+
+(async()=>{
+  // Check if already logged in
+  if (AUTH.token) {
+    try {
+      const me = await fetch('/api/auth/me', {
+        headers:{ Authorization:'Bearer '+AUTH.token }
+      });
+      if (me.ok) {
+        AUTH.user = await me.json();
+        document.getElementById('login-screen').style.display='none';
+        await initApp();
+        return;
+      }
+    } catch(e) {}
+    // Token invalid — clear it
+    localStorage.removeItem('engear_token');
+    AUTH.token = null;
+  }
+  // Check if first run (no users)
+  try {
+    const res = await fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username:'__check__', password:'__check__' })
+    });
+    const data = await res.json();
+    // If error says "no users" or similar, show register form
+    // We check by trying to see if any user exists via register endpoint behavior
+  } catch(e){}
+  // Show login screen
 })();
 </script>
 </body>

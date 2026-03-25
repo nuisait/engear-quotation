@@ -18,11 +18,13 @@ router.get('/', async (req, res) => {
 // POST /api/projects/:projectId/line-items
 router.post('/', async (req, res) => {
   const { id, cat_id, desc, qty, unit, mat, lab } = req.body;
+  if (!id) return res.status(400).json({ error: 'id ต้องระบุ' });
+  if (!desc || !desc.trim()) return res.status(400).json({ error: 'ชื่อรายการต้องระบุ' });
   try {
     await db.query(
       `INSERT INTO line_items (id, project_id, cat_id, "desc", qty, unit, mat, lab)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [id, req.params.projectId, cat_id, desc, qty || 0, unit, mat || 0, lab || 0]
+      [id, req.params.projectId, cat_id || null, desc.trim(), qty || 0, unit || 'ชุด', mat || 0, lab || 0]
     );
     res.status(201).json({ id, project_id: req.params.projectId, cat_id, desc, qty, unit, mat, lab });
   } catch (err) {
@@ -33,11 +35,12 @@ router.post('/', async (req, res) => {
 // PUT /api/projects/:projectId/line-items/:id
 router.put('/:id', async (req, res) => {
   const { cat_id, desc, qty, unit, mat, lab } = req.body;
+  if (desc !== undefined && !desc.trim()) return res.status(400).json({ error: 'ชื่อรายการต้องระบุ' });
   try {
     const { rows } = await db.query(
       `UPDATE line_items SET cat_id=$1, "desc"=$2, qty=$3, unit=$4, mat=$5, lab=$6
        WHERE id=$7 AND project_id=$8 RETURNING *`,
-      [cat_id, desc, qty || 0, unit, mat || 0, lab || 0, req.params.id, req.params.projectId]
+      [cat_id || null, desc?.trim() || desc, qty || 0, unit || 'ชุด', mat || 0, lab || 0, req.params.id, req.params.projectId]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(rows[0]);
