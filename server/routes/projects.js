@@ -3,49 +3,67 @@ const router = express.Router();
 const db = require('../db');
 
 // GET /api/projects
-router.get('/', (req, res) => {
-  const projects = db.prepare('SELECT * FROM projects ORDER BY created_at DESC').all();
-  res.json(projects);
+router.get('/', async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT * FROM projects ORDER BY created_at DESC');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // GET /api/projects/:id
-router.get('/:id', (req, res) => {
-  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id);
-  if (!project) return res.status(404).json({ error: 'Not found' });
-  res.json(project);
+router.get('/:id', async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT * FROM projects WHERE id = $1', [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /api/projects
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { name, quo_no, client, company, phone, email, location } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
-
-  const result = db.prepare(`
-    INSERT INTO projects (name, quo_no, client, company, phone, email, location)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(name, quo_no, client, company, phone, email, location);
-
-  const project = db.prepare('SELECT * FROM projects WHERE id = ?').get(result.lastInsertRowid);
-  res.status(201).json(project);
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO projects (name, quo_no, client, company, phone, email, location)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [name, quo_no, client, company, phone, email, location]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // PUT /api/projects/:id
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const { name, quo_no, client, company, phone, email, location } = req.body;
-  const result = db.prepare(`
-    UPDATE projects SET name=?, quo_no=?, client=?, company=?, phone=?, email=?, location=?
-    WHERE id = ?
-  `).run(name, quo_no, client, company, phone, email, location, req.params.id);
-
-  if (result.changes === 0) return res.status(404).json({ error: 'Not found' });
-  res.json(db.prepare('SELECT * FROM projects WHERE id = ?').get(req.params.id));
+  try {
+    const { rows } = await db.query(
+      `UPDATE projects SET name=$1, quo_no=$2, client=$3, company=$4, phone=$5, email=$6, location=$7
+       WHERE id=$8 RETURNING *`,
+      [name, quo_no, client, company, phone, email, location, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // DELETE /api/projects/:id
-router.delete('/:id', (req, res) => {
-  const result = db.prepare('DELETE FROM projects WHERE id = ?').run(req.params.id);
-  if (result.changes === 0) return res.status(404).json({ error: 'Not found' });
-  res.json({ success: true });
+router.delete('/:id', async (req, res) => {
+  try {
+    const { rowCount } = await db.query('DELETE FROM projects WHERE id=$1', [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const app = express();
@@ -24,5 +25,5 @@ app.get('/{*path}', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
-  console.log(`📦 Database: data.sqlite`);
+  console.log(`📦 Database: ${process.env.DATABASE_URL ? 'PostgreSQL (Supabase)' : 'No DATABASE_URL set!'}`);
 });
