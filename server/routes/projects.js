@@ -65,13 +65,30 @@ router.post('/', async (req, res) => {
 
 // PUT /api/projects/:id
 router.put('/:id', async (req, res) => {
-  const { name, quo_no, client, company, phone, email, location } = req.body;
+  const { name, quo_no, client, company, phone, email, location, quotation_status } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'ชื่อโครงการต้องระบุ' });
   try {
     const { rows } = await db.query(
-      `UPDATE projects SET name=$1, quo_no=$2, client=$3, company=$4, phone=$5, email=$6, location=$7
-       WHERE id=$8 RETURNING *`,
-      [name.trim(), quo_no || null, client || null, company || null, phone || null, email || null, location || null, req.params.id]
+      `UPDATE projects SET name=$1, quo_no=$2, client=$3, company=$4, phone=$5, email=$6, location=$7, quotation_status=COALESCE($8, quotation_status)
+       WHERE id=$9 RETURNING *`,
+      [name.trim(), quo_no || null, client || null, company || null, phone || null, email || null, location || null, quotation_status || null, req.params.id]
+    );
+    if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/projects/:id/status
+router.patch('/:id/status', async (req, res) => {
+  const { quotation_status } = req.body;
+  const valid = ['draft', 'review', 'submitted', 'paid'];
+  if (!valid.includes(quotation_status)) return res.status(400).json({ error: 'Invalid status' });
+  try {
+    const { rows } = await db.query(
+      'UPDATE projects SET quotation_status=$1 WHERE id=$2 RETURNING *',
+      [quotation_status, req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(rows[0]);

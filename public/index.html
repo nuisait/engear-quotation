@@ -261,6 +261,28 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 /* USER PILL */
 .user-pill { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--bg3); border-radius: 99px; font-size: 11px; color: var(--text2); margin-bottom: 8px; }
 .user-pill .role { color: var(--accent); font-size: 10px; font-family: var(--mono); }
+
+/* PROJECT DETAIL TABS */
+.proj-detail-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--bg2); padding: 0 32px; position: sticky; top: 61px; z-index: 9; }
+.proj-detail-tab { padding: 12px 20px; font-size: 13px; cursor: pointer; color: var(--text3); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; display: flex; align-items: center; gap: 6px; }
+.proj-detail-tab:hover { color: var(--text); }
+.proj-detail-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.proj-tab-content { display: none; }
+.proj-tab-content.active { display: block; }
+
+/* QUOTATION STATUS */
+.quo-status-bar { display: flex; align-items: center; gap: 8px; padding: 12px 32px; background: var(--bg2); border-bottom: 1px solid var(--border); }
+.quo-status-label { font-size: 12px; color: var(--text3); margin-right: 4px; }
+.quo-status-btn { padding: 5px 14px; border-radius: 99px; font-size: 12px; cursor: pointer; border: 1px solid var(--border2); background: var(--bg3); color: var(--text3); transition: all .15s; }
+.quo-status-btn:hover { border-color: var(--text3); color: var(--text); }
+.quo-status-btn.active-draft { background: rgba(255,255,255,.06); color: var(--text2); border-color: var(--border2); }
+.quo-status-btn.active-review { background: rgba(245,158,11,.12); color: #f59e0b; border-color: rgba(245,158,11,.3); }
+.quo-status-btn.active-submitted { background: var(--blue-dim); color: var(--blue); border-color: rgba(96,165,250,.3); }
+.quo-status-btn.active-paid { background: var(--green-dim); color: var(--green); border-color: rgba(74,222,128,.3); }
+
+/* BACK BUTTON */
+.back-btn { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r); font-size: 13px; cursor: pointer; border: 1px solid var(--border2); background: var(--bg3); color: var(--text2); transition: all .15s; }
+.back-btn:hover { color: var(--text); border-color: var(--text3); }
 </style>
 </head>
 <body>
@@ -322,12 +344,6 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="nav-item active" onclick="nav('dashboard')"><span class="nav-icon">⬡</span> Dashboard</div>
       <div class="nav-item" onclick="nav('projects')"><span class="nav-icon">◫</span> โครงการ</div>
 
-      <div class="nav-section">งาน</div>
-      <div class="nav-item" onclick="nav('boq')"><span class="nav-icon">▤</span> BOQ Builder</div>
-      <div class="nav-item" onclick="nav('extras')"><span class="nav-icon">◈</span> ค่าใช้จ่ายเพิ่มเติม</div>
-      <div class="nav-item" onclick="nav('summary')"><span class="nav-icon">◉</span> สรุป Quotation</div>
-      <div class="nav-item" onclick="nav('revisions')"><span class="nav-icon">◎</span> Revision History</div>
-
       <div class="nav-section">ข้อมูล</div>
       <div class="nav-item" onclick="nav('pricedb')"><span class="nav-icon">▦</span> Unit Price Database</div>
       <div class="nav-item" onclick="nav('master')"><span class="nav-icon">◧</span> Master Template</div>
@@ -349,7 +365,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="page-header">
         <div><div class="page-title">Dashboard</div><div class="page-subtitle">ภาพรวมระบบ Quotation</div></div>
         <div class="header-actions">
-          <button class="btn btn-gold" onclick="nav('boq')">+ สร้าง Quotation ใหม่</button>
+          <button class="btn btn-gold" onclick="nav('projects')">+ สร้างโครงการใหม่</button>
         </div>
       </div>
       <div class="content">
@@ -384,174 +400,164 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       </div>
     </div>
 
-    <!-- BOQ BUILDER -->
-    <div id="page-boq" class="page">
+    <!-- PROJECT DETAIL (BOQ + Extras + Quotation tabs) -->
+    <div id="page-project-detail" class="page">
       <div class="page-header">
-        <div><div class="page-title">BOQ Builder</div><div class="page-subtitle">Bill of Quantities — รายละเอียดงานและราคา</div></div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div class="back-btn" onclick="nav('projects')">← กลับ</div>
+          <div>
+            <div class="page-title" id="proj-detail-name">โครงการ</div>
+            <div class="page-subtitle" id="proj-detail-meta"></div>
+          </div>
+        </div>
         <div class="header-actions">
           <div id="unsaved-badge" class="unsaved-badge"><span class="unsaved-dot"></span>มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</div>
-          <button class="btn" onclick="addLineItemFromModal()">+ เพิ่มรายการ</button>
-          <button class="btn btn-green" onclick="saveRevision()">💾 บันทึก Revision</button>
-          <button class="btn btn-gold" onclick="exportExcel()">↓ Export Excel</button>
+          <button class="btn" onclick="sendEmailModal()">✉ Email</button>
+          <button class="btn btn-gold" onclick="printQuotation()">📄 PDF</button>
         </div>
       </div>
-      <div class="content">
-        <!-- Project info -->
-        <div class="card">
-          <div class="card-title">ข้อมูลโครงการ</div>
-          <div class="form-row cols4">
-            <div class="form-group">
-              <label>โครงการ</label>
-              <select id="boq-proj" onchange="onBoqProjectChange()">
-                <option value="">-- เลือก --</option>
-              </select>
-            </div>
-            <div class="form-group"><label>เลขที่ Quotation</label><input id="boq-quo-no" placeholder="QUO-EG-25XXX"></div>
-            <div class="form-group"><label>ลูกค้า</label><input id="boq-client" placeholder="ชื่อผู้ติดต่อ"></div>
-            <div class="form-group"><label>สถานที่</label><input id="boq-location" placeholder="ที่ตั้งโครงการ"></div>
-          </div>
-        </div>
-        <!-- Category selector -->
-        <div class="card">
-          <div class="card-title" style="margin-bottom:10px">เลือกหมวดงาน <span style="font-size:11px;color:var(--text3);font-weight:400">คลิกเพื่อ toggle</span></div>
-          <div class="tag-group" id="cat-tags"></div>
-        </div>
-        <!-- BOQ Table -->
-        <div class="card" style="padding:0;overflow:hidden">
-          <div id="boq-table-wrap" style="overflow-x:auto">
-            <table class="boq-table" id="boq-table">
-              <thead>
-                <tr>
-                  <th style="width:36px;padding-left:16px">#</th>
-                  <th>รายการ / Description</th>
-                  <th class="qty-col right">จำนวน</th>
-                  <th class="unit-col">หน่วย</th>
-                  <th class="price-col right">ค่าของ/หน่วย</th>
-                  <th class="price-col right">ค่าแรง/หน่วย</th>
-                  <th class="price-col right">รวม/หน่วย</th>
-                  <th class="amt-col right" style="padding-right:16px">จำนวนเงิน</th>
-                  <th class="action-col"></th>
-                </tr>
-              </thead>
-              <tbody id="boq-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- EXTRAS -->
-    <div id="page-extras" class="page">
-      <div class="page-header">
-        <div><div class="page-title">ค่าใช้จ่ายเพิ่มเติม</div><div class="page-subtitle">ค่าเดินทาง, OT, ค่าขอเข้าพื้นที่, Overhead</div></div>
+      <!-- TAB BAR -->
+      <div class="proj-detail-tabs">
+        <div class="proj-detail-tab active" id="tab-btn-boq" onclick="switchProjTab('boq')">▤ BOQ</div>
+        <div class="proj-detail-tab" id="tab-btn-extras" onclick="switchProjTab('extras')">◈ ค่าใช้จ่ายเพิ่มเติม</div>
+        <div class="proj-detail-tab" id="tab-btn-quotation" onclick="switchProjTab('quotation')">◉ Quotation</div>
       </div>
-      <div class="content">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div>
-            <div class="card">
-              <div class="card-title">ที่ตั้งโครงการ</div>
-              <div class="form-group" style="margin-bottom:12px">
-                <label>ประเภทที่ตั้ง</label>
-                <select id="loc-type" onchange="onLocTypeChange()">
-                  <option value="bkk">กรุงเทพและปริมณฑล</option>
-                  <option value="province">ต่างจังหวัด</option>
-                </select>
-              </div>
-              <div id="distance-group" style="display:none" class="form-group" style="margin-bottom:12px">
-                <label>ระยะทาง (กม. เที่ยวเดียว)</label>
-                <input type="number" id="distance" value="0" class="num" oninput="calcExtras()">
-              </div>
-              <div id="travel-note" style="font-size:12px;color:var(--text2);margin-top:8px;padding:10px;background:var(--bg3);border-radius:var(--r)"></div>
+
+      <!-- TAB: BOQ -->
+      <div id="proj-tab-boq" class="proj-tab-content active">
+        <div class="content">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <button class="btn" onclick="addLineItemFromModal()">+ เพิ่มรายการ</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-green" onclick="exportExcel()">↓ Excel</button>
+              <button class="btn btn-gold" onclick="saveRevision()">💾 บันทึก BOQ</button>
             </div>
-            <div class="card">
-              <div class="card-title">ค่าขอเข้าพื้นที่ / Security</div>
-              <div class="form-row cols2">
-                <div class="form-group">
-                  <label>มีค่าขอเข้าพื้นที่</label>
-                  <select id="has-access" onchange="calcExtras()">
-                    <option value="0">ไม่มี</option>
-                    <option value="1">มี</option>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:10px">เลือกหมวดงาน <span style="font-size:11px;color:var(--text3);font-weight:400">คลิกเพื่อ toggle</span></div>
+            <div class="tag-group" id="cat-tags"></div>
+          </div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <div id="boq-table-wrap" style="overflow-x:auto">
+              <table class="boq-table" id="boq-table">
+                <thead>
+                  <tr>
+                    <th style="width:36px;padding-left:16px">#</th>
+                    <th>รายการ / Description</th>
+                    <th class="qty-col right">จำนวน</th>
+                    <th class="unit-col">หน่วย</th>
+                    <th class="price-col right">ค่าของ/หน่วย</th>
+                    <th class="price-col right">ค่าแรง/หน่วย</th>
+                    <th class="price-col right">รวม/หน่วย</th>
+                    <th class="amt-col right" style="padding-right:16px">จำนวนเงิน</th>
+                    <th class="action-col"></th>
+                  </tr>
+                </thead>
+                <tbody id="boq-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: EXTRAS -->
+      <div id="proj-tab-extras" class="proj-tab-content">
+        <div class="content">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+              <div class="card">
+                <div class="card-title">ที่ตั้งโครงการ</div>
+                <div class="form-group" style="margin-bottom:12px">
+                  <label>ประเภทที่ตั้ง</label>
+                  <select id="loc-type" onchange="onLocTypeChange()">
+                    <option value="bkk">กรุงเทพและปริมณฑล</option>
+                    <option value="province">ต่างจังหวัด</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label>จำนวนเงิน (฿)</label>
-                  <input type="number" id="access-amt" value="0" class="num" oninput="calcExtras()">
+                <div id="distance-group" style="display:none" class="form-group">
+                  <label>ระยะทาง (กม. เที่ยวเดียว)</label>
+                  <input type="number" id="distance" value="0" class="num" oninput="calcExtras()">
+                </div>
+                <div id="travel-note" style="font-size:12px;color:var(--text2);margin-top:8px;padding:10px;background:var(--bg3);border-radius:var(--r)"></div>
+              </div>
+              <div class="card">
+                <div class="card-title">ค่าขอเข้าพื้นที่ / Security</div>
+                <div class="form-row cols2">
+                  <div class="form-group">
+                    <label>มีค่าขอเข้าพื้นที่</label>
+                    <select id="has-access" onchange="calcExtras()">
+                      <option value="0">ไม่มี</option>
+                      <option value="1">มี</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>จำนวนเงิน (฿)</label>
+                    <input type="number" id="access-amt" value="0" class="num" oninput="calcExtras()">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="card">
+                <div class="card-title">ข้อจำกัดการทำงาน (OT)</div>
+                <div class="form-row cols2" style="margin-bottom:12px">
+                  <div class="form-group">
+                    <label>ประเภท OT</label>
+                    <select id="ot-type" onchange="calcExtras()">
+                      <option value="1">ทำงานปกติ</option>
+                      <option value="1.3">วันหยุด (+30%)</option>
+                      <option value="1.5">กลางคืน (+50%)</option>
+                      <option value="2">วันหยุด+กลางคืน (+100%)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>สัดส่วนที่ต้อง OT (%)</label>
+                    <input type="number" id="ot-pct" value="0" class="num" oninput="calcExtras()">
+                  </div>
+                </div>
+                <div id="ot-note" style="font-size:12px;color:var(--text2);padding:10px;background:var(--bg3);border-radius:var(--r)"></div>
+              </div>
+              <div class="card">
+                <div class="card-title">Overhead & VAT</div>
+                <div class="form-row cols2">
+                  <div class="form-group">
+                    <label>Overhead / ค่าดำเนินการ (%)</label>
+                    <input type="number" id="overhead-pct" value="10" class="num" oninput="calcExtras()">
+                  </div>
+                  <div class="form-group">
+                    <label>VAT (%)</label>
+                    <input type="number" id="vat-pct" value="7" class="num" oninput="calcExtras()">
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div>
-            <div class="card">
-              <div class="card-title">ข้อจำกัดการทำงาน (OT)</div>
-              <div class="form-row cols2" style="margin-bottom:12px">
-                <div class="form-group">
-                  <label>ประเภท OT</label>
-                  <select id="ot-type" onchange="calcExtras()">
-                    <option value="1">ทำงานปกติ</option>
-                    <option value="1.3">วันหยุด (+30%)</option>
-                    <option value="1.5">กลางคืน (+50%)</option>
-                    <option value="2">วันหยุด+กลางคืน (+100%)</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>สัดส่วนที่ต้อง OT (%)</label>
-                  <input type="number" id="ot-pct" value="0" class="num" oninput="calcExtras()">
-                </div>
-              </div>
-              <div id="ot-note" style="font-size:12px;color:var(--text2);padding:10px;background:var(--bg3);border-radius:var(--r)"></div>
-            </div>
-            <div class="card">
-              <div class="card-title">Overhead & VAT</div>
-              <div class="form-row cols2">
-                <div class="form-group">
-                  <label>Overhead / ค่าดำเนินการ (%)</label>
-                  <input type="number" id="overhead-pct" value="10" class="num" oninput="calcExtras()">
-                </div>
-                <div class="form-group">
-                  <label>VAT (%)</label>
-                  <input type="number" id="vat-pct" value="7" class="num" oninput="calcExtras()">
-                </div>
-              </div>
-            </div>
+          <div class="card" id="extras-preview">
+            <div class="card-title">ตัวอย่างการคำนวณ (Real-time)</div>
+            <div id="extras-calc"></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px">
+            <button class="btn btn-gold" onclick="saveExtrasWithFeedback()">💾 บันทึกค่าใช้จ่าย</button>
           </div>
         </div>
-        <!-- Live calculation -->
-        <div class="card" id="extras-preview">
-          <div class="card-title">ตัวอย่างการคำนวณ (Real-time)</div>
-          <div id="extras-calc"></div>
-        </div>
       </div>
-    </div>
 
-    <!-- SUMMARY -->
-    <div id="page-summary" class="page">
-      <div class="page-header">
-        <div><div class="page-title">สรุป Quotation</div><div class="page-subtitle">ยอดรวมและรายละเอียดทั้งหมด</div></div>
-        <div class="header-actions">
-          <button class="btn" onclick="sendEmailModal()">✉ ส่ง Email</button>
-          <button class="btn btn-green" onclick="exportExcel()">↓ Export Excel</button>
-          <button class="btn btn-gold" onclick="printQuotation()">📄 Print / PDF</button>
+      <!-- TAB: QUOTATION -->
+      <div id="proj-tab-quotation" class="proj-tab-content">
+        <!-- Status Bar -->
+        <div class="quo-status-bar">
+          <span class="quo-status-label">สถานะ Quotation:</span>
+          <button class="quo-status-btn" id="qs-draft" onclick="updateQuotationStatus('draft')">📝 Draft</button>
+          <button class="quo-status-btn" id="qs-review" onclick="updateQuotationStatus('review')">🔍 Review</button>
+          <button class="quo-status-btn" id="qs-submitted" onclick="updateQuotationStatus('submitted')">📤 Submit to Customer</button>
+          <button class="quo-status-btn" id="qs-paid" onclick="updateQuotationStatus('paid')">✅ Paid</button>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="saveRevision()">💾 บันทึก Revision</button>
+            <button class="btn btn-sm btn-green" onclick="exportExcel()">↓ Excel</button>
+          </div>
         </div>
-      </div>
-      <div class="content" id="summary-content"></div>
-    </div>
-
-    <!-- REVISIONS -->
-    <div id="page-revisions" class="page">
-      <div class="page-header">
-        <div><div class="page-title">Revision History</div><div class="page-subtitle">ประวัติการแก้ไข Quotation ทุก version</div></div>
-        <div class="header-actions">
-          <button class="btn btn-gold" onclick="saveRevision()">+ บันทึก Revision ใหม่</button>
-        </div>
-      </div>
-      <div class="content">
-        <div class="form-group" style="max-width:240px;margin-bottom:16px">
-          <label>กรองตามโครงการ</label>
-          <select id="rev-filter-proj" onchange="renderRevisions()">
-            <option value="">ทุกโครงการ</option>
-          </select>
-        </div>
-        <div id="revisions-list"></div>
+        <div class="content" id="summary-content"></div>
       </div>
     </div>
 
@@ -1100,17 +1106,67 @@ function nav(page){
   const el = document.getElementById('page-'+page);
   if (!el) return;
   el.classList.add('active');
-  const map = {dashboard:0,projects:1,boq:2,extras:3,summary:4,revisions:5,pricedb:6,master:7};
+  const map = {dashboard:0,projects:1,'project-detail':1,pricedb:2,master:3};
   document.querySelectorAll('.nav-item')[map[page]]?.classList.add('active');
   if(page==='dashboard') renderDashboard();
   if(page==='projects') renderProjects();
-  if(page==='boq') renderBoqPage();
-  if(page==='summary') renderSummary();
-  if(page==='revisions') renderRevisions();
   if(page==='pricedb') renderPriceDB();
   if(page==='master') renderMaster();
-  if(page==='extras') calcExtras();
   if(page==='users') renderUsers();
+}
+
+async function openProject(id, tab){
+  S.activeProjectId = id;
+  await loadLineItemsForProject(id);
+  await loadExtrasForProject(id);
+  saveUiState();
+  // Update project detail header
+  const p = S.projects.find(x=>x.id===id);
+  if(p){
+    document.getElementById('proj-detail-name').textContent = p.name;
+    document.getElementById('proj-detail-meta').textContent = [p.quoNo, p.client, p.location].filter(Boolean).join(' · ');
+  }
+  nav('project-detail');
+  switchProjTab(tab||'boq');
+  renderBoqPage();
+  renderSummary();
+  updateQuotationStatusUI();
+}
+
+function switchProjTab(tab){
+  ['boq','extras','quotation'].forEach(t=>{
+    document.getElementById('proj-tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('tab-btn-'+t).classList.toggle('active', t===tab);
+  });
+  if(tab==='extras') calcExtras();
+  if(tab==='quotation') renderSummary();
+}
+
+async function saveExtrasWithFeedback(){
+  await saveExtras();
+  toast('บันทึกค่าใช้จ่ายเรียบร้อย');
+}
+
+async function updateQuotationStatus(status){
+  if(!S.activeProjectId) return;
+  try{
+    await api(`/api/projects/${S.activeProjectId}/status`, {method:'PATCH', body:{quotation_status:status}});
+    const p = S.projects.find(x=>x.id===S.activeProjectId);
+    if(p) p.quotation_status = status;
+    updateQuotationStatusUI();
+    const labels = {draft:'Draft',review:'Review',submitted:'Submit to Customer',paid:'Paid'};
+    toast('เปลี่ยนสถานะเป็น '+labels[status]);
+  }catch(e){ toast('ไม่สามารถเปลี่ยนสถานะได้: '+e.message,'error'); }
+}
+
+function updateQuotationStatusUI(){
+  const p = S.projects.find(x=>x.id===S.activeProjectId);
+  const status = p?.quotation_status||'draft';
+  ['draft','review','submitted','paid'].forEach(s=>{
+    const btn = document.getElementById('qs-'+s);
+    if(!btn) return;
+    btn.className = 'quo-status-btn' + (s===status ? ' active-'+s : '');
+  });
 }
 
 // ================================================================
@@ -1214,11 +1270,7 @@ async function setActiveProject(id){
 }
 
 async function goBoqForProject(id){
-  S.activeProjectId = id;
-  await loadLineItemsForProject(id);
-  await loadExtrasForProject(id);
-  saveUiState();
-  nav('boq');
+  await openProject(id, 'boq');
 }
 
 function openNewProjectModal(){
@@ -1244,14 +1296,13 @@ async function confirmNewProject(){
         location: document.getElementById('np-location').value
       }
     });
-    const proj = {id:p.id, name:p.name, quoNo:p.quo_no||'', client:p.client||'', company:p.company||'', phone:p.phone||'', email:p.email||'', location:p.location||''};
+    const proj = {id:p.id, name:p.name, quoNo:p.quo_no||'', client:p.client||'', company:p.company||'', phone:p.phone||'', email:p.email||'', location:p.location||'', quotation_status:p.quotation_status||'draft'};
     S.projects.push(proj);
-    S.activeProjectId = proj.id;
     closeModal('modal-project');
-    renderProjects();
     updateAllSelects();
     toast('สร้างโครงการ "'+name+'" เรียบร้อย');
     saveUiState();
+    await openProject(proj.id, 'boq');
   }catch(e){ toast('สร้างโครงการล้มเหลว: '+e.message,'error'); }
 }
 
@@ -2484,7 +2535,8 @@ async function loadData(){
     if(projects.length) S.projects = projects.map(p=>({
       id:p.id, name:p.name, quoNo:p.quo_no||'',
       client:p.client||'', company:p.company||'',
-      phone:p.phone||'', email:p.email||'', location:p.location||''
+      phone:p.phone||'', email:p.email||'', location:p.location||'',
+      quotation_status:p.quotation_status||'draft'
     }));
     if(categories.length) S.categories = categories;
     if(priceDB.length) S.priceDB = priceDB.map(p=>({
@@ -2559,7 +2611,8 @@ async function duplicateProject(id){
     S.projects.push({
       id: newProj.id, name: newProj.name, quoNo: newProj.quo_no||'',
       client: newProj.client||'', company: newProj.company||'',
-      phone: newProj.phone||'', email: newProj.email||'', location: newProj.location||''
+      phone: newProj.phone||'', email: newProj.email||'', location: newProj.location||'',
+      quotation_status: newProj.quotation_status||'draft'
     });
     renderProjects();
     updateAllSelects();
