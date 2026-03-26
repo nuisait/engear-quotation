@@ -110,18 +110,28 @@ input.num { text-align: right; font-family: var(--mono); font-size: 12px; }
 
 /* PROJECT CARDS GRID */
 .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 20px; }
-.proj-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r2); padding: 18px; cursor: pointer; transition: all .2s; position: relative; overflow: hidden; }
-.proj-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--border); transition: background .2s; }
+.proj-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r2); padding: 18px; cursor: pointer; transition: all .2s; position: relative; overflow: visible; }
+.proj-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--border); transition: background .2s; border-radius: var(--r2) var(--r2) 0 0; }
 .proj-card:hover { border-color: var(--border2); transform: translateY(-1px); }
 .proj-card.active { border-color: var(--accent); }
 .proj-card.active::before { background: var(--accent); }
-.proj-name { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.proj-name { font-size: 14px; font-weight: 500; margin-bottom: 6px; padding-right: 28px; }
 .proj-meta { font-size: 12px; color: var(--text2); line-height: 1.8; }
 .proj-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 .proj-total { font-family: var(--mono); font-size: 13px; color: var(--accent); }
 .new-proj-card { border-style: dashed; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--text3); min-height: 140px; }
 .new-proj-card:hover { border-color: var(--accent); color: var(--accent); }
 .new-proj-icon { font-size: 24px; }
+
+/* CARD MENU */
+.card-menu-btn { position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; border-radius: var(--r); background: transparent; border: 1px solid transparent; color: var(--text3); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; z-index: 1; letter-spacing: 1px; }
+.card-menu-btn:hover { background: var(--bg3); border-color: var(--border2); color: var(--text); }
+.card-dropdown { position: absolute; top: 38px; right: 8px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--r2); padding: 4px; z-index: 200; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,.4); display: none; }
+.card-dropdown.show { display: block; }
+.card-dropdown-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--r); font-size: 13px; cursor: pointer; color: var(--text2); transition: all .15s; }
+.card-dropdown-item:hover { background: var(--bg3); color: var(--text); }
+.card-dropdown-item.danger { color: var(--red); }
+.card-dropdown-item.danger:hover { background: var(--red-dim); }
 
 /* BOQ TABLE */
 .boq-table { width: 100%; border-collapse: collapse; }
@@ -1068,28 +1078,51 @@ function renderProjects(){
   grid.innerHTML = S.projects.map(p=>{
     const revs = S.revisions.filter(r=>r.projId===p.id);
     const latest = revs[revs.length-1];
+    const hasBoq = revs.length > 0;
     return `
     <div class="proj-card ${S.activeProjectId===p.id?'active':''}" onclick="setActiveProject(${p.id})">
+      <button class="card-menu-btn" onclick="event.stopPropagation();toggleCardMenu(${p.id})" title="ตัวเลือก">···</button>
+      <div id="card-menu-${p.id}" class="card-dropdown">
+        <div class="card-dropdown-item" onclick="event.stopPropagation();closeAllCardMenus();editProject(${p.id})">✏️ แก้ไขข้อมูลโครงการ</div>
+        <div class="card-dropdown-item" onclick="event.stopPropagation();closeAllCardMenus();duplicateProject(${p.id})">⧉ คัดลอกโครงการ</div>
+        <div class="card-dropdown-item danger" onclick="event.stopPropagation();closeAllCardMenus();deleteProject(${p.id})">✕ ลบโครงการ</div>
+      </div>
       <div class="proj-name">${p.name}</div>
       <div class="proj-meta">
-        ${p.client}<br>
+        ${p.client||'—'}<br>
         ${p.company||''}<br>
-        ${p.location}
+        ${p.location||'—'}
       </div>
       <div class="proj-footer">
-        <span class="badge badge-gold">${p.quoNo}</span>
+        <span class="badge badge-gold">${p.quoNo||'—'}</span>
         ${latest?`<span class="proj-total">${fmt(latest.total)} ฿</span>`:'<span style="font-size:11px;color:var(--text3)">ยังไม่มีราคา</span>'}
       </div>
-      <div style="display:flex;gap:6px;margin-top:10px">
-        <button class="btn btn-sm btn-gold" onclick="event.stopPropagation();goBoqForProject(${p.id})">เปิด BOQ</button>
-        <button class="btn btn-sm" onclick="event.stopPropagation();editProject(${p.id})">แก้ไข</button>
-        <button class="btn btn-sm" onclick="event.stopPropagation();duplicateProject(${p.id})" title="คัดลอกโครงการ">⧉</button>
-        <button class="btn btn-sm btn-red" onclick="event.stopPropagation();deleteProject(${p.id})" title="ลบโครงการ">✕</button>
+      <div style="margin-top:12px">
+        <button class="btn btn-sm ${hasBoq?'':'btn-gold'}" style="width:100%;justify-content:center"
+          onclick="event.stopPropagation();goBoqForProject(${p.id})">
+          ${hasBoq?'✏️ แก้ไข BOQ':'▶ เปิด BOQ'}
+        </button>
       </div>
     </div>`;
   }).join('');
   grid.innerHTML += `<div class="proj-card new-proj-card" onclick="openNewProjectModal()"><div class="new-proj-icon">＋</div><div style="font-size:13px">เพิ่มโครงการใหม่</div></div>`;
   updateRevFilterSelect();
+  // Close dropdown when clicking outside
+  document.addEventListener('click', closeAllCardMenus, { once: true });
+}
+
+function toggleCardMenu(id){
+  const menu = document.getElementById('card-menu-'+id);
+  const isOpen = menu.classList.contains('show');
+  closeAllCardMenus();
+  if (!isOpen) {
+    menu.classList.add('show');
+    setTimeout(()=>document.addEventListener('click', closeAllCardMenus, { once:true }), 0);
+  }
+}
+
+function closeAllCardMenus(){
+  document.querySelectorAll('.card-dropdown.show').forEach(m=>m.classList.remove('show'));
 }
 
 async function setActiveProject(id){
