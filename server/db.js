@@ -8,13 +8,19 @@ const pool = new Pool({
     : false
 });
 
-// SQL to run in Supabase SQL Editor to create users table:
+// SQL to run in Supabase SQL Editor:
 // CREATE TABLE IF NOT EXISTS users (
 //   id            SERIAL PRIMARY KEY,
 //   username      TEXT UNIQUE NOT NULL,
+//   email         TEXT,
 //   password_hash TEXT NOT NULL,
-//   role          TEXT DEFAULT 'viewer',
+//   role          TEXT DEFAULT 'readonly',   -- admin | cfo | readonly
+//   status        TEXT DEFAULT 'pending',    -- active | pending | disabled
 //   created_at    TIMESTAMP DEFAULT NOW()
 // );
+// -- If table already exists, add columns:
+// ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT;
+// ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';
+// UPDATE users SET status = 'active' WHERE status IS NULL;
 
 module.exports = pool;
