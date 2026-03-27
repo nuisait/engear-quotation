@@ -1,22 +1,26 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const auth = require('./server/middleware/auth');
 const app = express();
 
 app.use(express.json());
-
-// Serve static frontend files from /public
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API Routes
-app.use('/api/projects',              require('./server/routes/projects'));
-app.use('/api/projects/:projectId/line-items', require('./server/routes/lineItems'));
-app.use('/api/projects/:projectId/extras',     require('./server/routes/extras'));
-app.use('/api/price-db',              require('./server/routes/priceDb'));
-app.use('/api/categories',            require('./server/routes/categories'));
-app.use('/api/revisions',             require('./server/routes/revisions'));
-app.use('/api/migrate',               require('./server/routes/migrate'));
+// Auth routes (no token required)
+app.use('/api/auth', require('./server/routes/auth'));
 
-// Fallback: serve index.html for all other routes
+// Protected API routes
+app.use('/api/projects',                       auth, require('./server/routes/projects'));
+app.use('/api/projects/:projectId/line-items', auth, require('./server/routes/lineItems'));
+app.use('/api/projects/:projectId/extras',     auth, require('./server/routes/extras'));
+app.use('/api/price-db',                       auth, require('./server/routes/priceDb'));
+app.use('/api/categories',                     auth, require('./server/routes/categories'));
+app.use('/api/revisions',                      auth, require('./server/routes/revisions'));
+app.use('/api/migrate',                        auth, require('./server/routes/migrate'));
+app.use('/api/email',                          auth, require('./server/routes/email'));
+
+// Fallback: serve index.html
 app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -24,5 +28,7 @@ app.get('/{*path}', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
-  console.log(`📦 Database: data.sqlite`);
+  const dbInfo = process.env.DB_HOST ? `PostgreSQL (${process.env.DB_HOST})` : process.env.DATABASE_URL ? 'PostgreSQL (URL)' : 'No database configured!';
+  console.log(`📦 Database: ${dbInfo}`);;
+  console.log(`🔐 Auth: JWT (${process.env.JWT_SECRET ? 'custom secret' : 'default secret — set JWT_SECRET in production'})`);
 });

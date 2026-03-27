@@ -3,29 +3,42 @@ const router = express.Router();
 const db = require('../db');
 
 // GET /api/revisions?project_id=X
-router.get('/', (req, res) => {
-  const { project_id } = req.query;
-  const revisions = project_id
-    ? db.prepare('SELECT * FROM revisions WHERE project_id=? ORDER BY date DESC').all(project_id)
-    : db.prepare('SELECT * FROM revisions ORDER BY date DESC').all();
-  res.json(revisions);
+router.get('/', async (req, res) => {
+  try {
+    const { project_id } = req.query;
+    const { rows } = project_id
+      ? await db.query('SELECT * FROM revisions WHERE project_id=$1 ORDER BY date DESC', [project_id])
+      : await db.query('SELECT * FROM revisions ORDER BY date DESC');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /api/revisions
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   const { id, project_id, version, date, note, items, total } = req.body;
-  db.prepare(`
-    INSERT INTO revisions (id, project_id, version, date, note, items, total)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(id, project_id, version, date, note, items || 0, total || 0);
-  res.status(201).json({ id, project_id, version, date, note, items, total });
+  try {
+    await db.query(
+      `INSERT INTO revisions (id, project_id, version, date, note, items, total)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [id, project_id, version, date, note, items || 0, total || 0]
+    );
+    res.status(201).json({ id, project_id, version, date, note, items, total });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // DELETE /api/revisions/:id
-router.delete('/:id', (req, res) => {
-  const result = db.prepare('DELETE FROM revisions WHERE id=?').run(req.params.id);
-  if (result.changes === 0) return res.status(404).json({ error: 'Not found' });
-  res.json({ success: true });
+router.delete('/:id', async (req, res) => {
+  try {
+    const { rowCount } = await db.query('DELETE FROM revisions WHERE id=$1', [req.params.id]);
+    if (rowCount === 0) return res.status(404).json({ error: 'Not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

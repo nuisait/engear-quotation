@@ -110,18 +110,28 @@ input.num { text-align: right; font-family: var(--mono); font-size: 12px; }
 
 /* PROJECT CARDS GRID */
 .proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 20px; }
-.proj-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r2); padding: 18px; cursor: pointer; transition: all .2s; position: relative; overflow: hidden; }
-.proj-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--border); transition: background .2s; }
+.proj-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r2); padding: 18px; cursor: pointer; transition: all .2s; position: relative; overflow: visible; }
+.proj-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--border); transition: background .2s; border-radius: var(--r2) var(--r2) 0 0; }
 .proj-card:hover { border-color: var(--border2); transform: translateY(-1px); }
 .proj-card.active { border-color: var(--accent); }
 .proj-card.active::before { background: var(--accent); }
-.proj-name { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.proj-name { font-size: 14px; font-weight: 500; margin-bottom: 6px; padding-right: 28px; }
 .proj-meta { font-size: 12px; color: var(--text2); line-height: 1.8; }
 .proj-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
 .proj-total { font-family: var(--mono); font-size: 13px; color: var(--accent); }
 .new-proj-card { border-style: dashed; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: var(--text3); min-height: 140px; }
 .new-proj-card:hover { border-color: var(--accent); color: var(--accent); }
 .new-proj-icon { font-size: 24px; }
+
+/* CARD MENU */
+.card-menu-btn { position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; border-radius: var(--r); background: transparent; border: 1px solid transparent; color: var(--text3); font-size: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; z-index: 1; letter-spacing: 1px; }
+.card-menu-btn:hover { background: var(--bg3); border-color: var(--border2); color: var(--text); }
+.card-dropdown { position: absolute; top: 38px; right: 8px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--r2); padding: 4px; z-index: 200; min-width: 160px; box-shadow: 0 8px 24px rgba(0,0,0,.4); display: none; }
+.card-dropdown.show { display: block; }
+.card-dropdown-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: var(--r); font-size: 13px; cursor: pointer; color: var(--text2); transition: all .15s; }
+.card-dropdown-item:hover { background: var(--bg3); color: var(--text); }
+.card-dropdown-item.danger { color: var(--red); }
+.card-dropdown-item.danger:hover { background: var(--red-dim); }
 
 /* BOQ TABLE */
 .boq-table { width: 100%; border-collapse: collapse; }
@@ -215,9 +225,120 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   .shell { grid-template-columns: 1fr; }
   .sidebar { display: none; }
 }
+
+/* LOGIN SCREEN */
+.login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.login-box { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--r2); padding: 36px 40px; width: 380px; }
+.login-logo { font-family: var(--mono); font-size: 22px; font-weight: 500; color: var(--accent); letter-spacing: 3px; margin-bottom: 6px; }
+.login-sub { font-size: 11px; color: var(--text3); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 28px; }
+.login-tabs { display: flex; gap: 0; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+.login-tab { flex: 1; padding: 8px; text-align: center; font-size: 13px; cursor: pointer; color: var(--text3); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; }
+.login-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.login-msg { border-radius: var(--r); padding: 8px 12px; font-size: 12px; margin-bottom: 14px; display: none; }
+.login-msg.error { background: var(--red-dim); border: 1px solid rgba(248,113,113,.3); color: var(--red); }
+.login-msg.success { background: var(--green-dim); border: 1px solid rgba(74,222,128,.3); color: var(--green); }
+.login-msg.show { display: block; }
+
+/* ADMIN PAGE */
+.user-table { width: 100%; border-collapse: collapse; }
+.user-table th { font-size: 11px; color: var(--text3); text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: .5px; }
+.user-table td { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.03); font-size: 13px; }
+.status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+.status-active { background: var(--green-dim); color: var(--green); border: 1px solid rgba(74,222,128,.3); }
+.status-pending { background: rgba(245,158,11,.1); color: #f59e0b; border: 1px solid rgba(245,158,11,.3); }
+.status-disabled { background: rgba(255,255,255,.05); color: var(--text3); border: 1px solid var(--border); }
+
+/* UNSAVED INDICATOR */
+.unsaved-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; margin-left: 6px; animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.unsaved-badge { display: none; align-items: center; gap: 6px; padding: 5px 12px; background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.3); border-radius: 99px; font-size: 12px; color: #f59e0b; }
+.unsaved-badge.show { display: flex; }
+
+/* ANALYTICS BARS */
+.analytics-bar { height: 6px; background: var(--accent-dim); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.analytics-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width .5s; }
+
+/* USER PILL */
+.user-pill { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: var(--bg3); border-radius: 99px; font-size: 11px; color: var(--text2); margin-bottom: 8px; }
+.user-pill .role { color: var(--accent); font-size: 10px; font-family: var(--mono); }
+
+/* PROJECT DETAIL TABS */
+.proj-detail-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--bg2); padding: 0 32px; position: sticky; top: 61px; z-index: 9; }
+.proj-detail-tab { padding: 12px 20px; font-size: 13px; cursor: pointer; color: var(--text3); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; display: flex; align-items: center; gap: 6px; }
+.proj-detail-tab:hover { color: var(--text); }
+.proj-detail-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.proj-tab-content { display: none; }
+.proj-tab-content.active { display: block; }
+
+/* QUOTATION STATUS */
+.quo-status-bar { display: flex; align-items: center; gap: 8px; padding: 12px 32px; background: var(--bg2); border-bottom: 1px solid var(--border); }
+.quo-status-label { font-size: 12px; color: var(--text3); margin-right: 4px; }
+.quo-status-btn { padding: 5px 14px; border-radius: 99px; font-size: 12px; cursor: pointer; border: 1px solid var(--border2); background: var(--bg3); color: var(--text3); transition: all .15s; }
+.quo-status-btn:hover { border-color: var(--text3); color: var(--text); }
+.quo-status-btn.active-draft { background: rgba(255,255,255,.06); color: var(--text2); border-color: var(--border2); }
+.quo-status-btn.active-review { background: rgba(245,158,11,.12); color: #f59e0b; border-color: rgba(245,158,11,.3); }
+.quo-status-btn.active-submitted { background: var(--blue-dim); color: var(--blue); border-color: rgba(96,165,250,.3); }
+.quo-status-btn.active-paid { background: var(--green-dim); color: var(--green); border-color: rgba(74,222,128,.3); }
+
+/* MASTER TEMPLATE TABLE */
+.master-table { width:100%; border-collapse:collapse; }
+.master-table th { font-size:11px; color:var(--text3); text-align:left; padding:7px 10px; border-bottom:1px solid var(--border); text-transform:uppercase; letter-spacing:.5px; }
+.master-table th.right { text-align:right; }
+.master-table td { padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.03); }
+.master-table td input { background:transparent; border:none; padding:4px 6px; border-radius:4px; font-size:13px; width:100%; }
+.master-table td input:focus { background:var(--bg3); border:1px solid var(--accent); outline:none; }
+.master-table td input.num { text-align:right; font-family:var(--mono); }
+.master-add-row td { padding:6px; background:var(--bg3); }
+.master-add-row td input { background:var(--bg4); border:1px solid var(--border); padding:6px 8px; border-radius:var(--r); }
 </style>
 </head>
 <body>
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">ENGEAR</div>
+    <div class="login-sub">Quotation System</div>
+    <div class="login-tabs">
+      <div class="login-tab active" id="tab-signin" onclick="switchLoginTab('signin')">เข้าสู่ระบบ</div>
+      <div class="login-tab" id="tab-signup" onclick="switchLoginTab('signup')">สมัครสมาชิก</div>
+    </div>
+    <div id="login-msg" class="login-msg"></div>
+
+    <!-- SIGN IN FORM -->
+    <div id="form-signin">
+      <div class="form-group" style="margin-bottom:12px">
+        <label>ชื่อผู้ใช้ หรือ Email</label>
+        <input id="login-username" placeholder="username หรือ email" autocomplete="username" onkeydown="if(event.key==='Enter')loginSubmit()">
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label>รหัสผ่าน</label>
+        <input id="login-password" type="password" placeholder="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')loginSubmit()">
+      </div>
+      <button class="btn btn-gold" style="width:100%;padding:10px" onclick="loginSubmit()" id="login-btn">เข้าสู่ระบบ</button>
+    </div>
+
+    <!-- SIGN UP FORM -->
+    <div id="form-signup" style="display:none">
+      <div class="form-group" style="margin-bottom:12px">
+        <label>ชื่อผู้ใช้</label>
+        <input id="reg-username" placeholder="username (ไม่มีช่องว่าง)" autocomplete="username">
+      </div>
+      <div class="form-group" style="margin-bottom:12px">
+        <label>Email</label>
+        <input id="reg-email" type="email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
+        <label>รหัสผ่าน <span style="color:var(--text3);font-size:11px">(อย่างน้อย 6 ตัวอักษร)</span></label>
+        <input id="reg-password" type="password" placeholder="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')signupSubmit()">
+      </div>
+      <button class="btn btn-gold" style="width:100%;padding:10px" onclick="signupSubmit()" id="signup-btn">สมัครสมาชิก</button>
+      <div style="margin-top:12px;font-size:11px;color:var(--text3);text-align:center">
+        หลังสมัครแล้ว Admin จะอนุมัติบัญชีก่อน login ได้
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="shell">
   <!-- SIDEBAR -->
   <aside class="sidebar">
@@ -230,19 +351,16 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="nav-item active" onclick="nav('dashboard')"><span class="nav-icon">⬡</span> Dashboard</div>
       <div class="nav-item" onclick="nav('projects')"><span class="nav-icon">◫</span> โครงการ</div>
 
-      <div class="nav-section">งาน</div>
-      <div class="nav-item" onclick="nav('boq')"><span class="nav-icon">▤</span> BOQ Builder</div>
-      <div class="nav-item" onclick="nav('extras')"><span class="nav-icon">◈</span> ค่าใช้จ่ายเพิ่มเติม</div>
-      <div class="nav-item" onclick="nav('summary')"><span class="nav-icon">◉</span> สรุป Quotation</div>
-      <div class="nav-item" onclick="nav('revisions')"><span class="nav-icon">◎</span> Revision History</div>
-
       <div class="nav-section">ข้อมูล</div>
       <div class="nav-item" onclick="nav('pricedb')"><span class="nav-icon">▦</span> Unit Price Database</div>
       <div class="nav-item" onclick="nav('master')"><span class="nav-icon">◧</span> Master Template</div>
     </nav>
     <div class="sidebar-footer">
-      <div style="margin-bottom:8px">v2.0 · ENGEAR CO., LTD.</div>
-      <div onclick="clearData()" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:4px" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">⊘ ล้างข้อมูลทั้งหมด</div>
+      <div id="user-pill-wrap"></div>
+      <div style="margin-bottom:8px;font-size:11px;color:var(--text3)">v2.1 · ENGEAR CO., LTD.</div>
+      <div onclick="migrateToDatabase()" style="font-size:11px;color:var(--accent);cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:6px" onmouseover="this.style.opacity='.7'" onmouseout="this.style.opacity='1'">⇪ Migrate ข้อมูลสู่ Database</div>
+      <div onclick="nav('users')" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:4px;margin-bottom:6px" id="manage-users-link" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text3)'">◎ จัดการผู้ใช้</div>
+      <div onclick="logout()" style="font-size:11px;color:var(--text3);cursor:pointer;display:flex;align-items:center;gap:4px" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--text3)'">⊘ ออกจากระบบ</div>
     </div>
   </aside>
 
@@ -254,12 +372,12 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="page-header">
         <div><div class="page-title">Dashboard</div><div class="page-subtitle">ภาพรวมระบบ Quotation</div></div>
         <div class="header-actions">
-          <button class="btn btn-gold" onclick="nav('boq')">+ สร้าง Quotation ใหม่</button>
+          <button class="btn btn-gold" onclick="nav('projects')">+ สร้างโครงการใหม่</button>
         </div>
       </div>
       <div class="content">
         <div class="stats-row" id="dash-stats"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
           <div class="card">
             <div class="card-title">โครงการล่าสุด</div>
             <div id="dash-recent-projects"></div>
@@ -268,6 +386,10 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
             <div class="card-title">Revision ล่าสุด</div>
             <div id="dash-recent-revisions" class="rev-timeline"></div>
           </div>
+        </div>
+        <div class="card">
+          <div class="card-title">มูลค่าโครงการ (Top 5) <span style="font-size:11px;font-weight:400">เรียงตามยอดล่าสุด</span></div>
+          <div id="dash-analytics"></div>
         </div>
       </div>
     </div>
@@ -285,190 +407,179 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       </div>
     </div>
 
-    <!-- BOQ BUILDER -->
-    <div id="page-boq" class="page">
+    <!-- PROJECT DETAIL (BOQ + Extras + Quotation tabs) -->
+    <div id="page-project-detail" class="page">
       <div class="page-header">
-        <div><div class="page-title">BOQ Builder</div><div class="page-subtitle">Bill of Quantities — รายละเอียดงานและราคา</div></div>
-        <div class="header-actions">
-          <button class="btn" onclick="addLineItemFromModal()">+ เพิ่มรายการ</button>
-          <button class="btn btn-green" onclick="saveRevision()">💾 บันทึก Revision</button>
-          <button class="btn btn-gold" onclick="exportExcel()">↓ Export Excel</button>
-        </div>
-      </div>
-      <div class="content">
-        <!-- Project info -->
-        <div class="card">
-          <div class="card-title">ข้อมูลโครงการ</div>
-          <div class="form-row cols4">
-            <div class="form-group">
-              <label>โครงการ</label>
-              <select id="boq-proj" onchange="onBoqProjectChange()">
-                <option value="">-- เลือก --</option>
-              </select>
-            </div>
-            <div class="form-group"><label>เลขที่ Quotation</label><input id="boq-quo-no" placeholder="QUO-EG-25XXX"></div>
-            <div class="form-group"><label>ลูกค้า</label><input id="boq-client" placeholder="ชื่อผู้ติดต่อ"></div>
-            <div class="form-group"><label>สถานที่</label><input id="boq-location" placeholder="ที่ตั้งโครงการ"></div>
-          </div>
-        </div>
-        <!-- Category selector -->
-        <div class="card">
-          <div class="card-title" style="margin-bottom:10px">เลือกหมวดงาน <span style="font-size:11px;color:var(--text3);font-weight:400">คลิกเพื่อ toggle</span></div>
-          <div class="tag-group" id="cat-tags"></div>
-        </div>
-        <!-- BOQ Table -->
-        <div class="card" style="padding:0;overflow:hidden">
-          <div id="boq-table-wrap" style="overflow-x:auto">
-            <table class="boq-table" id="boq-table">
-              <thead>
-                <tr>
-                  <th style="width:36px;padding-left:16px">#</th>
-                  <th>รายการ / Description</th>
-                  <th class="qty-col right">จำนวน</th>
-                  <th class="unit-col">หน่วย</th>
-                  <th class="price-col right">ค่าของ/หน่วย</th>
-                  <th class="price-col right">ค่าแรง/หน่วย</th>
-                  <th class="price-col right">รวม/หน่วย</th>
-                  <th class="amt-col right" style="padding-right:16px">จำนวนเงิน</th>
-                  <th class="action-col"></th>
-                </tr>
-              </thead>
-              <tbody id="boq-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- EXTRAS -->
-    <div id="page-extras" class="page">
-      <div class="page-header">
-        <div><div class="page-title">ค่าใช้จ่ายเพิ่มเติม</div><div class="page-subtitle">ค่าเดินทาง, OT, ค่าขอเข้าพื้นที่, Overhead</div></div>
-      </div>
-      <div class="content">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div class="back-btn" onclick="nav('projects')">← กลับ</div>
           <div>
-            <div class="card">
-              <div class="card-title">ที่ตั้งโครงการ</div>
-              <div class="form-group" style="margin-bottom:12px">
-                <label>ประเภทที่ตั้ง</label>
-                <select id="loc-type" onchange="onLocTypeChange()">
-                  <option value="bkk">กรุงเทพและปริมณฑล</option>
-                  <option value="province">ต่างจังหวัด</option>
-                </select>
-              </div>
-              <div id="distance-group" style="display:none" class="form-group" style="margin-bottom:12px">
-                <label>ระยะทาง (กม. เที่ยวเดียว)</label>
-                <input type="number" id="distance" value="0" class="num" oninput="calcExtras()">
-              </div>
-              <div id="travel-note" style="font-size:12px;color:var(--text2);margin-top:8px;padding:10px;background:var(--bg3);border-radius:var(--r)"></div>
+            <div class="page-title" id="proj-detail-name">โครงการ</div>
+            <div class="page-subtitle" id="proj-detail-meta"></div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div id="unsaved-badge" class="unsaved-badge"><span class="unsaved-dot"></span>มีการเปลี่ยนแปลงที่ยังไม่ได้บันทึก</div>
+          <button class="btn" onclick="sendEmailModal()">✉ Email</button>
+          <button class="btn btn-gold" onclick="printQuotation()">📄 PDF</button>
+        </div>
+      </div>
+
+      <!-- TAB BAR -->
+      <div class="proj-detail-tabs">
+        <div class="proj-detail-tab active" id="tab-btn-boq" onclick="switchProjTab('boq')">▤ BOQ</div>
+        <div class="proj-detail-tab" id="tab-btn-extras" onclick="switchProjTab('extras')">◈ ค่าใช้จ่ายเพิ่มเติม</div>
+        <div class="proj-detail-tab" id="tab-btn-quotation" onclick="switchProjTab('quotation')">◉ Quotation</div>
+      </div>
+
+      <!-- TAB: BOQ -->
+      <div id="proj-tab-boq" class="proj-tab-content active">
+        <div class="content">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <button class="btn" onclick="addLineItemFromModal()">+ เพิ่มรายการ</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-green" onclick="exportExcel()">↓ Excel</button>
+              <button class="btn btn-gold" onclick="saveRevision()">💾 บันทึก BOQ</button>
             </div>
-            <div class="card">
-              <div class="card-title">ค่าขอเข้าพื้นที่ / Security</div>
-              <div class="form-row cols2">
-                <div class="form-group">
-                  <label>มีค่าขอเข้าพื้นที่</label>
-                  <select id="has-access" onchange="calcExtras()">
-                    <option value="0">ไม่มี</option>
-                    <option value="1">มี</option>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:10px">เลือกหมวดงาน <span style="font-size:11px;color:var(--text3);font-weight:400">คลิกเพื่อ toggle</span></div>
+            <div class="tag-group" id="cat-tags"></div>
+          </div>
+          <div class="card" style="padding:0;overflow:hidden">
+            <div id="boq-table-wrap" style="overflow-x:auto">
+              <table class="boq-table" id="boq-table">
+                <thead>
+                  <tr>
+                    <th style="width:36px;padding-left:16px">#</th>
+                    <th>รายการ / Description</th>
+                    <th class="qty-col right">จำนวน</th>
+                    <th class="unit-col">หน่วย</th>
+                    <th class="price-col right">ค่าของ/หน่วย</th>
+                    <th class="price-col right">ค่าแรง/หน่วย</th>
+                    <th class="price-col right">รวม/หน่วย</th>
+                    <th class="amt-col right" style="padding-right:16px">จำนวนเงิน</th>
+                    <th class="action-col"></th>
+                  </tr>
+                </thead>
+                <tbody id="boq-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: EXTRAS -->
+      <div id="proj-tab-extras" class="proj-tab-content">
+        <div class="content">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div>
+              <div class="card">
+                <div class="card-title">ที่ตั้งโครงการ</div>
+                <div class="form-group" style="margin-bottom:12px">
+                  <label>ประเภทที่ตั้ง</label>
+                  <select id="loc-type" onchange="onLocTypeChange()">
+                    <option value="bkk">กรุงเทพและปริมณฑล</option>
+                    <option value="province">ต่างจังหวัด</option>
                   </select>
                 </div>
-                <div class="form-group">
-                  <label>จำนวนเงิน (฿)</label>
-                  <input type="number" id="access-amt" value="0" class="num" oninput="calcExtras()">
+                <div id="distance-group" style="display:none" class="form-group">
+                  <label>ระยะทาง (กม. เที่ยวเดียว)</label>
+                  <input type="number" id="distance" value="0" class="num" oninput="calcExtras()">
+                </div>
+                <div id="travel-note" style="font-size:12px;color:var(--text2);margin-top:8px;padding:10px;background:var(--bg3);border-radius:var(--r)"></div>
+              </div>
+              <div class="card">
+                <div class="card-title">ค่าขอเข้าพื้นที่ / Security</div>
+                <div class="form-row cols2">
+                  <div class="form-group">
+                    <label>มีค่าขอเข้าพื้นที่</label>
+                    <select id="has-access" onchange="calcExtras()">
+                      <option value="0">ไม่มี</option>
+                      <option value="1">มี</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>จำนวนเงิน (฿)</label>
+                    <input type="number" id="access-amt" value="0" class="num" oninput="calcExtras()">
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="card">
+                <div class="card-title">ข้อจำกัดการทำงาน (OT)</div>
+                <div class="form-row cols2" style="margin-bottom:12px">
+                  <div class="form-group">
+                    <label>ประเภท OT</label>
+                    <select id="ot-type" onchange="calcExtras()">
+                      <option value="1">ทำงานปกติ</option>
+                      <option value="1.3">วันหยุด (+30%)</option>
+                      <option value="1.5">กลางคืน (+50%)</option>
+                      <option value="2">วันหยุด+กลางคืน (+100%)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>สัดส่วนที่ต้อง OT (%)</label>
+                    <input type="number" id="ot-pct" value="0" class="num" oninput="calcExtras()">
+                  </div>
+                </div>
+                <div id="ot-note" style="font-size:12px;color:var(--text2);padding:10px;background:var(--bg3);border-radius:var(--r)"></div>
+              </div>
+              <div class="card">
+                <div class="card-title">Overhead & VAT</div>
+                <div class="form-row cols2">
+                  <div class="form-group">
+                    <label>Overhead / ค่าดำเนินการ (%)</label>
+                    <input type="number" id="overhead-pct" value="10" class="num" oninput="calcExtras()">
+                  </div>
+                  <div class="form-group">
+                    <label>VAT (%)</label>
+                    <input type="number" id="vat-pct" value="7" class="num" oninput="calcExtras()">
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-          <div>
-            <div class="card">
-              <div class="card-title">ข้อจำกัดการทำงาน (OT)</div>
-              <div class="form-row cols2" style="margin-bottom:12px">
-                <div class="form-group">
-                  <label>ประเภท OT</label>
-                  <select id="ot-type" onchange="calcExtras()">
-                    <option value="1">ทำงานปกติ</option>
-                    <option value="1.3">วันหยุด (+30%)</option>
-                    <option value="1.5">กลางคืน (+50%)</option>
-                    <option value="2">วันหยุด+กลางคืน (+100%)</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label>สัดส่วนที่ต้อง OT (%)</label>
-                  <input type="number" id="ot-pct" value="0" class="num" oninput="calcExtras()">
-                </div>
-              </div>
-              <div id="ot-note" style="font-size:12px;color:var(--text2);padding:10px;background:var(--bg3);border-radius:var(--r)"></div>
-            </div>
-            <div class="card">
-              <div class="card-title">Overhead & VAT</div>
-              <div class="form-row cols2">
-                <div class="form-group">
-                  <label>Overhead / ค่าดำเนินการ (%)</label>
-                  <input type="number" id="overhead-pct" value="10" class="num" oninput="calcExtras()">
-                </div>
-                <div class="form-group">
-                  <label>VAT (%)</label>
-                  <input type="number" id="vat-pct" value="7" class="num" oninput="calcExtras()">
-                </div>
-              </div>
-            </div>
+          <div class="card" id="extras-preview">
+            <div class="card-title">ตัวอย่างการคำนวณ (Real-time)</div>
+            <div id="extras-calc"></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px">
+            <button class="btn btn-gold" onclick="saveExtrasWithFeedback()">💾 บันทึกค่าใช้จ่าย</button>
           </div>
         </div>
-        <!-- Live calculation -->
-        <div class="card" id="extras-preview">
-          <div class="card-title">ตัวอย่างการคำนวณ (Real-time)</div>
-          <div id="extras-calc"></div>
-        </div>
       </div>
-    </div>
 
-    <!-- SUMMARY -->
-    <div id="page-summary" class="page">
-      <div class="page-header">
-        <div><div class="page-title">สรุป Quotation</div><div class="page-subtitle">ยอดรวมและรายละเอียดทั้งหมด</div></div>
-        <div class="header-actions">
-          <button class="btn btn-green" onclick="exportExcel()">↓ Export Excel</button>
-          <button class="btn btn-gold" onclick="printQuotation()">🖨 Print</button>
+      <!-- TAB: QUOTATION -->
+      <div id="proj-tab-quotation" class="proj-tab-content">
+        <!-- Status Bar -->
+        <div class="quo-status-bar">
+          <span class="quo-status-label">สถานะ Quotation:</span>
+          <button class="quo-status-btn" id="qs-draft" onclick="updateQuotationStatus('draft')">📝 Draft</button>
+          <button class="quo-status-btn" id="qs-review" onclick="updateQuotationStatus('review')">🔍 Review</button>
+          <button class="quo-status-btn" id="qs-submitted" onclick="updateQuotationStatus('submitted')">📤 Submit to Customer</button>
+          <button class="quo-status-btn" id="qs-paid" onclick="updateQuotationStatus('paid')">✅ Paid</button>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="saveRevision()">💾 บันทึก Revision</button>
+            <button class="btn btn-sm btn-green" onclick="exportExcel()">↓ Excel</button>
+          </div>
         </div>
-      </div>
-      <div class="content" id="summary-content"></div>
-    </div>
-
-    <!-- REVISIONS -->
-    <div id="page-revisions" class="page">
-      <div class="page-header">
-        <div><div class="page-title">Revision History</div><div class="page-subtitle">ประวัติการแก้ไข Quotation ทุก version</div></div>
-        <div class="header-actions">
-          <button class="btn btn-gold" onclick="saveRevision()">+ บันทึก Revision ใหม่</button>
-        </div>
-      </div>
-      <div class="content">
-        <div class="form-group" style="max-width:240px;margin-bottom:16px">
-          <label>กรองตามโครงการ</label>
-          <select id="rev-filter-proj" onchange="renderRevisions()">
-            <option value="">ทุกโครงการ</option>
-          </select>
-        </div>
-        <div id="revisions-list"></div>
+        <div class="content" id="summary-content"></div>
       </div>
     </div>
 
     <!-- PRICE DB -->
     <div id="page-pricedb" class="page">
       <div class="page-header">
-        <div><div class="page-title">Unit Price Database</div><div class="page-subtitle">ราคามาตรฐานค่าของและค่าแรง</div></div>
-        <div class="header-actions">
-          <button class="btn" onclick="openPriceModal()">+ เพิ่มรายการ</button>
-        </div>
+        <div><div class="page-title">Unit Price Database</div><div class="page-subtitle">ราคามาตรฐานค่าของและค่าแรงต่อหน่วย</div></div>
       </div>
       <div class="content">
-        <div class="form-row cols4" style="margin-bottom:16px">
-          <div class="form-group" style="grid-column:span 2">
+        <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-end">
+          <div class="form-group" style="flex:2">
             <label>ค้นหา</label>
             <div class="search-bar"><span class="search-icon">⌕</span><input id="price-search" placeholder="ค้นหาชื่อรายการ..." oninput="renderPriceDB()"></div>
           </div>
-          <div class="form-group">
+          <div class="form-group" style="flex:1">
             <label>กรองตามหมวด</label>
             <select id="price-cat-filter" onchange="renderPriceDB()">
               <option value="">ทุกหมวด</option>
@@ -479,13 +590,21 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       </div>
     </div>
 
+    <!-- USERS -->
+    <div id="page-users" class="page">
+      <div class="page-header">
+        <div><div class="page-title">จัดการผู้ใช้</div><div class="page-subtitle">Admin เท่านั้นที่เห็นหน้านี้</div></div>
+        <div class="header-actions">
+          <button class="btn btn-gold" onclick="openAddUserModal()">+ เพิ่มผู้ใช้</button>
+        </div>
+      </div>
+      <div class="content" id="users-content"></div>
+    </div>
+
     <!-- MASTER TEMPLATE -->
     <div id="page-master" class="page">
       <div class="page-header">
-        <div><div class="page-title">Master Template</div><div class="page-subtitle">กำหนดหมวดงานและรายการย่อยมาตรฐาน</div></div>
-        <div class="header-actions">
-          <button class="btn btn-gold" onclick="addCategoryModal()">+ เพิ่มหมวดงาน</button>
-        </div>
+        <div><div class="page-title">Master Template</div><div class="page-subtitle">กำหนดหมวดงานและรายการย่อย พร้อมราคาเริ่มต้น</div></div>
       </div>
       <div class="content" id="master-content"></div>
     </div>
@@ -598,6 +717,54 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   </div>
 </div>
 
+<!-- EMAIL MODAL -->
+<div id="modal-email" class="overlay">
+  <div class="modal">
+    <div class="modal-title">ส่ง Quotation ทาง Email <span class="close" onclick="closeModal('modal-email')">×</span></div>
+    <div class="form-group" style="margin-bottom:12px"><label>ส่งถึง (Email)</label><input id="email-to" placeholder="client@company.com"></div>
+    <div class="form-group" style="margin-bottom:12px"><label>หัวข้อ</label><input id="email-subject" placeholder="Quotation จาก ENGEAR"></div>
+    <div class="form-group" style="margin-bottom:16px"><label>ข้อความเพิ่มเติม</label><textarea id="email-body" rows="4" placeholder="รายละเอียดเพิ่มเติม..."></textarea></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal('modal-email')">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="confirmSendEmail()">ส่ง Email</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD USER MODAL -->
+<div id="modal-add-user" class="overlay">
+  <div class="modal">
+    <div class="modal-title">เพิ่มผู้ใช้ <span class="close" onclick="closeModal('modal-add-user')">×</span></div>
+    <div class="form-group" style="margin-bottom:12px"><label>ชื่อผู้ใช้</label><input id="au-username" placeholder="username"></div>
+    <div class="form-group" style="margin-bottom:12px"><label>รหัสผ่าน</label><input type="password" id="au-password" placeholder="อย่างน้อย 6 ตัวอักษร"></div>
+    <div class="form-group" style="margin-bottom:16px">
+      <label>สิทธิ์</label>
+      <select id="au-role">
+        <option value="viewer">Viewer — ดูอย่างเดียว</option>
+        <option value="editor">Editor — แก้ไขได้</option>
+        <option value="admin">Admin — ทุกสิทธิ์</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal('modal-add-user')">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="confirmAddUser()">สร้างผู้ใช้</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div id="modal-change-pw" class="overlay">
+  <div class="modal">
+    <div class="modal-title">เปลี่ยนรหัสผ่าน <span class="close" onclick="closeModal('modal-change-pw')">×</span></div>
+    <div class="form-group" style="margin-bottom:12px"><label>รหัสผ่านเดิม</label><input type="password" id="pw-current" placeholder="รหัสผ่านเดิม"></div>
+    <div class="form-group" style="margin-bottom:16px"><label>รหัสผ่านใหม่</label><input type="password" id="pw-new" placeholder="อย่างน้อย 6 ตัวอักษร"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" onclick="closeModal('modal-change-pw')">ยกเลิก</button>
+      <button class="btn btn-gold" onclick="confirmChangePw()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <!-- SAVE REVISION MODAL -->
 <div id="modal-revision" class="overlay">
   <div class="modal">
@@ -611,6 +778,119 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 </div>
 
 <script>
+// ================================================================
+// AUTH STATE
+// ================================================================
+let AUTH = {
+  token: localStorage.getItem('engear_token'),
+  user: null
+};
+
+function switchLoginTab(tab){
+  document.getElementById('tab-signin').classList.toggle('active', tab==='signin');
+  document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  document.getElementById('form-signin').style.display = tab==='signin'?'block':'none';
+  document.getElementById('form-signup').style.display = tab==='signup'?'block':'none';
+  showLoginMsg('');
+}
+
+function showLoginMsg(msg, type='error'){
+  const el = document.getElementById('login-msg');
+  el.textContent = msg;
+  el.className = 'login-msg' + (msg ? ' show '+type : '');
+}
+
+async function loginSubmit(){
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn = document.getElementById('login-btn');
+  if (!username || !password) { showLoginMsg('กรุณากรอกชื่อผู้ใช้และรหัสผ่าน'); return; }
+  btn.textContent='กำลังเข้าสู่ระบบ...'; btn.disabled=true;
+  try {
+    const res = await fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login ล้มเหลว');
+    AUTH.token = data.token; AUTH.user = data.user;
+    localStorage.setItem('engear_token', data.token);
+    document.getElementById('login-screen').style.display = 'none';
+    await initApp();
+  } catch(e) {
+    showLoginMsg(e.message);
+  } finally { btn.textContent='เข้าสู่ระบบ'; btn.disabled=false; }
+}
+
+async function signupSubmit(){
+  const username = document.getElementById('reg-username').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const btn = document.getElementById('signup-btn');
+  if (!username || !email || !password) { showLoginMsg('กรุณากรอกข้อมูลให้ครบ'); return; }
+  btn.textContent='กำลังสมัคร...'; btn.disabled=true;
+  try {
+    const res = await fetch('/api/auth/signup', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username, email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'สมัครไม่สำเร็จ');
+    if (data.token) {
+      // First user = auto admin, login immediately
+      AUTH.token = data.token; AUTH.user = data.user;
+      localStorage.setItem('engear_token', data.token);
+      document.getElementById('login-screen').style.display = 'none';
+      await initApp();
+    } else {
+      showLoginMsg(data.message || 'สมัครสำเร็จ — รอ Admin อนุมัติ', 'success');
+      ['reg-username','reg-email','reg-password'].forEach(id=>document.getElementById(id).value='');
+    }
+  } catch(e) {
+    showLoginMsg(e.message);
+  } finally { btn.textContent='สมัครสมาชิก'; btn.disabled=false; }
+}
+
+async function registerSubmit(){ signupSubmit(); }
+
+function logout(){
+  AUTH.token = null; AUTH.user = null;
+  localStorage.removeItem('engear_token');
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('login-username').value='';
+  document.getElementById('login-password').value='';
+  document.getElementById('login-error').style.display='none';
+  document.getElementById('first-run-msg').style.display='none';
+}
+
+function renderUserPill(){
+  const wrap = document.getElementById('user-pill-wrap');
+  if (!wrap || !AUTH.user) return;
+  const roleLabel = { admin:'Admin', cfo:'CFO', readonly:'Read-Only' }[AUTH.user.role] || AUTH.user.role;
+  const roleColor = { admin:'var(--accent)', cfo:'var(--blue)', readonly:'var(--text3)' }[AUTH.user.role] || 'var(--text2)';
+  wrap.innerHTML = `<div class="user-pill">
+    <span>👤 ${AUTH.user.username}</span>
+    <span class="role" style="color:${roleColor}">${roleLabel}</span>
+    <span style="cursor:pointer;margin-left:4px;color:var(--text3)" onclick="openModal('modal-change-pw')" title="เปลี่ยนรหัสผ่าน">🔑</span>
+  </div>`;
+  const manageLink = document.getElementById('manage-users-link');
+  if (manageLink) manageLink.style.display = AUTH.user.role === 'admin' ? 'flex' : 'none';
+  // Apply read-only restrictions
+  applyRoleRestrictions();
+}
+
+function canEdit(){
+  return AUTH.user && AUTH.user.role !== 'readonly';
+}
+
+function applyRoleRestrictions(){
+  if (canEdit()) return;
+  // Read-Only: hide all action buttons and inputs after page renders
+  document.querySelectorAll('.btn-gold, .btn-green, .btn-red, .card-menu-btn').forEach(el=>{
+    if (!el.closest('#login-screen')) el.style.display='none';
+  });
+}
+
 // ================================================================
 // STATE
 // ================================================================
@@ -667,6 +947,147 @@ const fmt = n => Math.round(n).toLocaleString('th-TH');
 const fmtDec = (n,d=2) => Number(n).toFixed(d);
 const uid = () => 'i'+Date.now()+Math.random().toString(36).slice(2,6);
 
+// ================================================================
+// API HELPER
+// ================================================================
+async function api(url, opts={}){
+  const headers = { 'Content-Type':'application/json' };
+  if (AUTH.token) headers['Authorization'] = 'Bearer ' + AUTH.token;
+  const res = await fetch(url, {
+    headers, ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if (res.status === 401) { logout(); return; }
+  if(!res.ok) throw new Error(`API ${url} → ${res.status}`);
+  return res.json();
+}
+
+// ================================================================
+// UI STATE (localStorage สำหรับ state ที่ไม่ใช่ DB)
+// ================================================================
+function saveUiState(){
+  try{
+    localStorage.setItem('engear_ui', JSON.stringify({
+      selectedCats: S.selectedCats,
+      activeProjectId: S.activeProjectId
+    }));
+  }catch(e){}
+}
+
+function loadUiState(){
+  try{
+    const d = JSON.parse(localStorage.getItem('engear_ui')||'{}');
+    if(Array.isArray(d.selectedCats)) S.selectedCats = d.selectedCats;
+    if(d.activeProjectId != null) S.activeProjectId = d.activeProjectId;
+  }catch(e){}
+}
+
+// ================================================================
+// LOAD LINE ITEMS & EXTRAS PER PROJECT
+// ================================================================
+async function loadLineItemsForProject(projectId){
+  if(!projectId){ S.lineItems=[]; return; }
+  try{
+    const items = await api(`/api/projects/${projectId}/line-items`);
+    S.lineItems = items.map(x=>({
+      id: x.id, catId: x.cat_id, desc: x.desc,
+      qty: x.qty, unit: x.unit, mat: x.mat, lab: x.lab,
+      total: x.qty * ((x.mat||0)+(x.lab||0))
+    }));
+  }catch(e){ console.warn('loadLineItems fail',e); S.lineItems=[]; }
+}
+
+async function loadExtrasForProject(projectId){
+  if(!projectId) return;
+  try{
+    const e = await api(`/api/projects/${projectId}/extras`);
+    S.extras = {
+      travel: e.travel||0,
+      access: e.access_fee||0,
+      otMul: e.ot_mul||1,
+      otPct: e.ot_pct||0,
+      overhead: e.overhead??10,
+      vat: e.vat??7
+    };
+  }catch(e_){ console.warn('loadExtras fail',e_); }
+}
+
+async function saveExtras(){
+  if(!S.activeProjectId) return;
+  try{
+    await api(`/api/projects/${S.activeProjectId}/extras`, {
+      method:'PUT',
+      body:{
+        travel: S.extras.travel||0,
+        access_fee: S.extras.access||0,
+        ot_mul: S.extras.otMul||1,
+        ot_pct: S.extras.otPct||0,
+        overhead: S.extras.overhead??10,
+        vat: S.extras.vat??7
+      }
+    });
+  }catch(e){ console.warn('saveExtras fail',e); }
+}
+
+// ================================================================
+// CATEGORY FIELD UPDATE (inline edit ใน master page)
+// ================================================================
+async function updateCategoryField(ci, field, val){
+  S.categories[ci][field] = val;
+  const cat = S.categories[ci];
+  try{
+    await api(`/api/categories/${cat.id}`, {
+      method:'PUT',
+      body:{ name:cat.name, icon:cat.icon, sub:cat.sub }
+    });
+  }catch(e){ console.warn('updateCategoryField fail',e); }
+}
+
+// ================================================================
+// MIGRATE localStorage → DATABASE
+// ================================================================
+async function migrateToDatabase(){
+  let src = S;
+  try{
+    const saved = localStorage.getItem('engear_v2');
+    if(saved){ const d=JSON.parse(saved); src={...S,...d}; }
+  }catch(e){}
+
+  const payload = {
+    projects: src.projects.map(p=>({
+      id:p.id, name:p.name, quoNo:p.quoNo||p.quo_no||'',
+      client:p.client||'', company:p.company||'',
+      phone:p.phone||'', email:p.email||'', location:p.location||''
+    })),
+    categories: src.categories,
+    priceDB: src.priceDB.map(p=>({
+      id:p.id, catId:p.catId||p.cat_id,
+      name:p.name, unit:p.unit, mat:p.mat||0, lab:p.lab||0
+    })),
+    lineItems: src.lineItems.map(x=>({
+      id:x.id, projectId:x.projectId||S.activeProjectId||0,
+      catId:x.catId||x.cat_id, desc:x.desc,
+      qty:x.qty||0, unit:x.unit, mat:x.mat||0, lab:x.lab||0
+    })),
+    revisions: src.revisions.map(r=>({
+      id:r.id, projId:r.projId||r.project_id,
+      version:r.version, date:r.date, note:r.note||'',
+      items:r.items||0, total:r.total||0
+    })),
+    extras: src.extras&&S.activeProjectId ? {[S.activeProjectId]:src.extras} : {}
+  };
+
+  try{
+    const result = await api('/api/migrate',{method:'POST',body:payload});
+    toast(`Migrate สำเร็จ: ${result.imported.projects} โครงการ, ${result.imported.priceDB} ราคา`);
+    await loadData();
+    updateAllSelects();
+    renderDashboard();
+  }catch(e){
+    toast('Migrate ล้มเหลว: '+e.message,'error');
+  }
+}
+
 function toast(msg,type='success'){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -683,17 +1104,70 @@ function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 function nav(page){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  const map = {dashboard:0,projects:1,boq:2,extras:3,summary:4,revisions:5,pricedb:6,master:7};
+  const el = document.getElementById('page-'+page);
+  if (!el) return;
+  el.classList.add('active');
+  const map = {dashboard:0,projects:1,'project-detail':1,pricedb:2,master:3};
   document.querySelectorAll('.nav-item')[map[page]]?.classList.add('active');
   if(page==='dashboard') renderDashboard();
   if(page==='projects') renderProjects();
-  if(page==='boq') renderBoqPage();
-  if(page==='summary') renderSummary();
-  if(page==='revisions') renderRevisions();
   if(page==='pricedb') renderPriceDB();
   if(page==='master') renderMaster();
-  if(page==='extras') calcExtras();
+  if(page==='users') renderUsers();
+}
+
+async function openProject(id, tab){
+  S.activeProjectId = id;
+  await loadLineItemsForProject(id);
+  await loadExtrasForProject(id);
+  saveUiState();
+  // Update project detail header
+  const p = S.projects.find(x=>x.id===id);
+  if(p){
+    document.getElementById('proj-detail-name').textContent = p.name;
+    document.getElementById('proj-detail-meta').textContent = [p.quoNo, p.client, p.location].filter(Boolean).join(' · ');
+  }
+  nav('project-detail');
+  switchProjTab(tab||'boq');
+  renderBoqPage();
+  renderSummary();
+  updateQuotationStatusUI();
+}
+
+function switchProjTab(tab){
+  ['boq','extras','quotation'].forEach(t=>{
+    document.getElementById('proj-tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById('tab-btn-'+t).classList.toggle('active', t===tab);
+  });
+  if(tab==='extras') calcExtras();
+  if(tab==='quotation') renderSummary();
+}
+
+async function saveExtrasWithFeedback(){
+  await saveExtras();
+  toast('บันทึกค่าใช้จ่ายเรียบร้อย');
+}
+
+async function updateQuotationStatus(status){
+  if(!S.activeProjectId) return;
+  try{
+    await api(`/api/projects/${S.activeProjectId}/status`, {method:'PATCH', body:{quotation_status:status}});
+    const p = S.projects.find(x=>x.id===S.activeProjectId);
+    if(p) p.quotation_status = status;
+    updateQuotationStatusUI();
+    const labels = {draft:'Draft',review:'Review',submitted:'Submit to Customer',paid:'Paid'};
+    toast('เปลี่ยนสถานะเป็น '+labels[status]);
+  }catch(e){ toast('ไม่สามารถเปลี่ยนสถานะได้: '+e.message,'error'); }
+}
+
+function updateQuotationStatusUI(){
+  const p = S.projects.find(x=>x.id===S.activeProjectId);
+  const status = p?.quotation_status||'draft';
+  ['draft','review','submitted','paid'].forEach(s=>{
+    const btn = document.getElementById('qs-'+s);
+    if(!btn) return;
+    btn.className = 'quo-status-btn' + (s===status ? ' active-'+s : '');
+  });
 }
 
 // ================================================================
@@ -716,6 +1190,7 @@ function renderDashboard(){
       <span class="badge badge-gold" style="cursor:pointer">${p.quoNo}</span>
     </div>
   `).join('');
+  renderDashboardAnalytics();
   document.getElementById('dash-recent-revisions').innerHTML = S.revisions.slice(-4).reverse().map((r,i)=>{
     const p = S.projects.find(x=>x.id===r.projId);
     return `<div class="rev-item">
@@ -739,37 +1214,64 @@ function renderProjects(){
   grid.innerHTML = S.projects.map(p=>{
     const revs = S.revisions.filter(r=>r.projId===p.id);
     const latest = revs[revs.length-1];
+    const hasBoq = revs.length > 0;
     return `
     <div class="proj-card ${S.activeProjectId===p.id?'active':''}" onclick="setActiveProject(${p.id})">
+      <button class="card-menu-btn" onclick="event.stopPropagation();toggleCardMenu(${p.id})" title="ตัวเลือก">···</button>
+      <div id="card-menu-${p.id}" class="card-dropdown">
+        <div class="card-dropdown-item" onclick="event.stopPropagation();closeAllCardMenus();editProject(${p.id})">✏️ แก้ไขข้อมูลโครงการ</div>
+        <div class="card-dropdown-item" onclick="event.stopPropagation();closeAllCardMenus();duplicateProject(${p.id})">⧉ คัดลอกโครงการ</div>
+        <div class="card-dropdown-item danger" onclick="event.stopPropagation();closeAllCardMenus();deleteProject(${p.id})">✕ ลบโครงการ</div>
+      </div>
       <div class="proj-name">${p.name}</div>
       <div class="proj-meta">
-        ${p.client}<br>
+        ${p.client||'—'}<br>
         ${p.company||''}<br>
-        ${p.location}
+        ${p.location||'—'}
       </div>
       <div class="proj-footer">
-        <span class="badge badge-gold">${p.quoNo}</span>
+        <span class="badge badge-gold">${p.quoNo||'—'}</span>
         ${latest?`<span class="proj-total">${fmt(latest.total)} ฿</span>`:'<span style="font-size:11px;color:var(--text3)">ยังไม่มีราคา</span>'}
       </div>
-      <div style="display:flex;gap:6px;margin-top:10px">
-        <button class="btn btn-sm btn-gold" onclick="event.stopPropagation();goBoqForProject(${p.id})">เปิด BOQ</button>
-        <button class="btn btn-sm" onclick="event.stopPropagation();editProject(${p.id})">แก้ไข</button>
+      <div style="margin-top:12px">
+        <button class="btn btn-sm ${hasBoq?'':'btn-gold'}" style="width:100%;justify-content:center"
+          onclick="event.stopPropagation();goBoqForProject(${p.id})">
+          ${hasBoq?'✏️ แก้ไข BOQ':'▶ เปิด BOQ'}
+        </button>
       </div>
     </div>`;
   }).join('');
   grid.innerHTML += `<div class="proj-card new-proj-card" onclick="openNewProjectModal()"><div class="new-proj-icon">＋</div><div style="font-size:13px">เพิ่มโครงการใหม่</div></div>`;
   updateRevFilterSelect();
+  // Close dropdown when clicking outside
+  document.addEventListener('click', closeAllCardMenus, { once: true });
 }
 
-function setActiveProject(id){
+function toggleCardMenu(id){
+  const menu = document.getElementById('card-menu-'+id);
+  const isOpen = menu.classList.contains('show');
+  closeAllCardMenus();
+  if (!isOpen) {
+    menu.classList.add('show');
+    setTimeout(()=>document.addEventListener('click', closeAllCardMenus, { once:true }), 0);
+  }
+}
+
+function closeAllCardMenus(){
+  document.querySelectorAll('.card-dropdown.show').forEach(m=>m.classList.remove('show'));
+}
+
+async function setActiveProject(id){
   S.activeProjectId = id;
+  await loadLineItemsForProject(id);
+  await loadExtrasForProject(id);
+  saveUiState();
   renderProjects();
   renderSummary();
 }
 
-function goBoqForProject(id){
-  S.activeProjectId = id;
-  nav('boq');
+async function goBoqForProject(id){
+  await openProject(id, 'boq');
 }
 
 function openNewProjectModal(){
@@ -779,26 +1281,30 @@ function openNewProjectModal(){
   openModal('modal-project');
 }
 
-function confirmNewProject(){
+async function confirmNewProject(){
   const name = document.getElementById('np-name').value;
   if(!name){toast('กรุณากรอกชื่อโครงการ','error');return;}
-  const p = {
-    id: Date.now(),
-    name, 
-    quoNo: document.getElementById('np-quo').value,
-    client: document.getElementById('np-client').value,
-    company: document.getElementById('np-company').value,
-    phone: document.getElementById('np-phone').value,
-    email: document.getElementById('np-email').value,
-    location: document.getElementById('np-location').value
-  };
-  S.projects.push(p);
-  S.activeProjectId = p.id;
-  closeModal('modal-project');
-  renderProjects();
-  updateAllSelects();
-  toast('สร้างโครงการ "'+name+'" เรียบร้อย');
-  saveData();
+  try{
+    const p = await api('/api/projects',{
+      method:'POST',
+      body:{
+        name,
+        quo_no: document.getElementById('np-quo').value,
+        client: document.getElementById('np-client').value,
+        company: document.getElementById('np-company').value,
+        phone: document.getElementById('np-phone').value,
+        email: document.getElementById('np-email').value,
+        location: document.getElementById('np-location').value
+      }
+    });
+    const proj = {id:p.id, name:p.name, quoNo:p.quo_no||'', client:p.client||'', company:p.company||'', phone:p.phone||'', email:p.email||'', location:p.location||'', quotation_status:p.quotation_status||'draft'};
+    S.projects.push(proj);
+    closeModal('modal-project');
+    updateAllSelects();
+    toast('สร้างโครงการ "'+name+'" เรียบร้อย');
+    saveUiState();
+    await openProject(proj.id, 'boq');
+  }catch(e){ toast('สร้างโครงการล้มเหลว: '+e.message,'error'); }
 }
 
 function editProject(id){
@@ -813,7 +1319,7 @@ function editProject(id){
   document.getElementById('np-location').value = p.location||'';
   // save on confirm (overwrite)
   const btn = document.querySelector('#modal-project .btn-gold');
-  btn.onclick = ()=>{
+  btn.onclick = async ()=>{
     p.name = document.getElementById('np-name').value;
     p.quoNo = document.getElementById('np-quo').value;
     p.client = document.getElementById('np-client').value;
@@ -821,11 +1327,16 @@ function editProject(id){
     p.phone = document.getElementById('np-phone').value;
     p.email = document.getElementById('np-email').value;
     p.location = document.getElementById('np-location').value;
-    closeModal('modal-project');
-    renderProjects();
-    updateAllSelects();
-    toast('แก้ไขโครงการเรียบร้อย');
-    saveData();
+    try{
+      await api(`/api/projects/${p.id}`,{
+        method:'PUT',
+        body:{name:p.name, quo_no:p.quoNo, client:p.client, company:p.company, phone:p.phone, email:p.email, location:p.location}
+      });
+      closeModal('modal-project');
+      renderProjects();
+      updateAllSelects();
+      toast('แก้ไขโครงการเรียบร้อย');
+    }catch(e){ toast('แก้ไขล้มเหลว: '+e.message,'error'); }
     btn.onclick = confirmNewProject;
   };
   openModal('modal-project');
@@ -849,7 +1360,7 @@ function renderBoqPage(){
   }
 }
 
-function onBoqProjectChange(){
+async function onBoqProjectChange(){
   const id = parseInt(document.getElementById('boq-proj').value);
   S.activeProjectId = id;
   const p = S.projects.find(x=>x.id===id);
@@ -858,6 +1369,10 @@ function onBoqProjectChange(){
     document.getElementById('boq-client').value = p.client||'';
     document.getElementById('boq-location').value = p.location||'';
   }
+  await loadLineItemsForProject(id);
+  await loadExtrasForProject(id);
+  saveUiState();
+  renderBoqTable();
 }
 
 function renderCatTags(){
@@ -922,22 +1437,30 @@ function renderBoqTable(){
   tbody.innerHTML = html;
 }
 
-function updateItem(id,field,val){
+async function updateItem(id,field,val){
   const item = S.lineItems.find(x=>x.id===id);
   if(!item) return;
   item[field] = val;
   item.total = item.qty * ((item.mat||0)+(item.lab||0));
+  markDirty();
   renderBoqTable();
   renderSummaryIfActive();
-  saveData();
+  try{
+    await api(`/api/projects/${S.activeProjectId}/line-items/${id}`,{
+      method:'PUT',
+      body:{cat_id:item.catId, desc:item.desc, qty:item.qty, unit:item.unit, mat:item.mat, lab:item.lab}
+    });
+  }catch(e){ console.warn('updateItem fail',e); }
 }
 
-function removeItem(id){
-  S.lineItems = S.lineItems.filter(x=>x.id!==id);
-  renderBoqTable();
-  renderSummaryIfActive();
-  toast('ลบรายการแล้ว');
-  saveData();
+async function removeItem(id){
+  try{
+    await api(`/api/projects/${S.activeProjectId}/line-items/${id}`,{method:'DELETE'});
+    S.lineItems = S.lineItems.filter(x=>x.id!==id);
+    renderBoqTable();
+    renderSummaryIfActive();
+    toast('ลบรายการแล้ว');
+  }catch(e){ toast('ลบไม่สำเร็จ: '+e.message,'error'); }
 }
 
 function addItemForCat(catId){
@@ -1000,14 +1523,16 @@ function onMCatChange(){
   // Sub items จาก category ที่ไม่มีใน price DB
   if(cat){
     const dbNames = dbItems.map(p=>p.name);
-    cat.sub.filter(s=>!dbNames.includes(s)).forEach(s=>{
-      html+=`<div onclick="fillFromSub('${s.replace(/'/g,"\\'")}')" style="
+    cat.sub.filter(s=>!dbNames.includes(subName(s))).forEach(s=>{
+      const nm=subName(s), mat=subMat(s), lab=subLab(s), unit=subUnit(s);
+      const hasPrice=mat>0||lab>0;
+      html+=`<div onclick="fillFromSub(${JSON.stringify(JSON.stringify({name:nm,unit,mat,lab}))})" style="
         background:var(--bg3);border:1px dashed var(--border2);border-radius:var(--r);
         padding:7px 10px;cursor:pointer;transition:all .15s;min-width:140px;flex:1
       " onmouseover="this.style.borderColor='var(--text3)'"
          onmouseout="this.style.borderColor='var(--border2)'">
-        <div style="font-size:12px;font-weight:500;margin-bottom:3px">${s}</div>
-        <div style="font-size:11px;color:var(--text3)">กรอกราคาเอง</div>
+        <div style="font-size:12px;font-weight:500;margin-bottom:3px">${nm}</div>
+        <div style="font-size:11px;color:var(--text3)">${hasPrice?`ของ ${fmt(mat)} + แรง ${fmt(lab)} / ${unit}`:'กรอกราคาเอง'}</div>
       </div>`;
     });
   }
@@ -1036,13 +1561,18 @@ function fillFromPriceDB(priceId){
   document.getElementById('m-qty').focus();
 }
 
-function fillFromSub(name){
-  document.getElementById('m-desc').value = name;
-  document.getElementById('m-mat').value = 0;
-  document.getElementById('m-lab').value = 0;
-  document.getElementById('m-total-price').value = 0;
+function fillFromSub(jsonStr){
+  let s; try{ s=JSON.parse(jsonStr); }catch(e){ s={name:jsonStr,unit:'งาน',mat:0,lab:0}; }
+  document.getElementById('m-desc').value = typeof s==='object'?s.name:s;
+  const mat=typeof s==='object'?(s.mat||0):0;
+  const lab=typeof s==='object'?(s.lab||0):0;
+  document.getElementById('m-mat').value = mat;
+  document.getElementById('m-lab').value = lab;
+  document.getElementById('m-total-price').value = mat+lab;
+  const unitSel=document.getElementById('m-unit');
+  if(s.unit && unitSel) unitSel.value=s.unit;
   calcMTotal();
-  document.getElementById('m-mat').focus();
+  if(mat===0&&lab===0) document.getElementById('m-mat').focus();
 }
 
 function calcMTotal(){
@@ -1060,10 +1590,11 @@ function splitPrice(){
   calcMTotal();
 }
 
-function confirmAddItem(){
+async function confirmAddItem(){
   const catId=parseInt(document.getElementById('m-cat').value);
   const desc=document.getElementById('m-desc').value.trim();
   if(!catId||!desc){toast('กรุณาเลือกหมวดและกรอกชื่อรายการ','error');return;}
+  if(!S.activeProjectId){toast('กรุณาเลือกโครงการก่อนเพิ่มรายการ','error');return;}
   const item={
     id:uid(),catId,desc,
     qty:parseFloat(document.getElementById('m-qty').value)||1,
@@ -1073,13 +1604,19 @@ function confirmAddItem(){
     total:0
   };
   item.total=item.qty*(item.mat+item.lab);
-  S.lineItems.push(item);
-  if(!S.selectedCats.includes(catId)) S.selectedCats.push(catId);
-  closeModal('modal-lineitem');
-  renderCatTags();
-  renderBoqTable();
-  toast('เพิ่มรายการ "'+desc+'" แล้ว');
-  saveData();
+  try{
+    await api(`/api/projects/${S.activeProjectId}/line-items`,{
+      method:'POST',
+      body:{id:item.id, cat_id:catId, desc:item.desc, qty:item.qty, unit:item.unit, mat:item.mat, lab:item.lab}
+    });
+    S.lineItems.push(item);
+    if(!S.selectedCats.includes(catId)) S.selectedCats.push(catId);
+    closeModal('modal-lineitem');
+    renderCatTags();
+    renderBoqTable();
+    toast('เพิ่มรายการ "'+desc+'" แล้ว');
+    saveUiState();
+  }catch(e){ toast('เพิ่มรายการล้มเหลว: '+e.message,'error'); }
 }
 
 // ================================================================
@@ -1118,6 +1655,7 @@ function calcExtras(){
     else otNote.innerHTML='<span style="color:var(--green)">ไม่มีค่า OT</span>';
   }
   renderExtrasCalc();
+  saveExtras();
 }
 
 function renderExtrasCalc(){
@@ -1279,14 +1817,14 @@ function saveRevision(){
   openModal('modal-revision');
 }
 
-function confirmSaveRevision(){
+async function confirmSaveRevision(){
   if(!S.activeProjectId){toast('กรุณาเลือกโครงการก่อน','error');return;}
   const note=document.getElementById('rev-note-input').value;
   const p=S.projects.find(x=>x.id===S.activeProjectId);
   const existing=S.revisions.filter(r=>r.projId===S.activeProjectId);
   const lastVer=existing.length>0?existing[existing.length-1].version:'';
   const nextRev=lastVer?'R'+(parseInt(lastVer.slice(1)||0)+1):'R0';
-  S.revisions.push({
+  const rev={
     id:uid(),
     projId:S.activeProjectId,
     version:nextRev,
@@ -1294,11 +1832,19 @@ function confirmSaveRevision(){
     note: note||'บันทึก revision',
     items:S.lineItems.length,
     total:Math.round(calcNetTotal())
-  });
+  };
+  try{
+    await api('/api/revisions',{
+      method:'POST',
+      body:{id:rev.id, project_id:rev.projId, version:rev.version, date:rev.date, note:rev.note, items:rev.items, total:rev.total}
+    });
+    S.revisions.push(rev);
+  }catch(e){ toast('บันทึก revision ล้มเหลว: '+e.message,'error'); return; }
   closeModal('modal-revision');
+  markClean();
   updateRevFilterSelect();
+  renderRevisions();
   toast(`บันทึก ${p?.quoNo||''}-${nextRev} เรียบร้อย`);
-  saveData();
 }
 
 function updateRevFilterSelect(){
@@ -1316,63 +1862,111 @@ function renderPriceDB(){
   const search=(document.getElementById('price-search')?.value||'').toLowerCase();
   const catF=document.getElementById('price-cat-filter')?.value||'';
   let items=S.priceDB;
-  if(search) items=items.filter(p=>p.name.toLowerCase().includes(search));
-  if(catF) items=items.filter(p=>p.catId===parseInt(catF));
+  if(search) items=items.filter(p=>p.name.toLowerCase().includes(search)||p.unit.toLowerCase().includes(search));
+  if(catF) items=items.filter(p=>String(p.catId)===catF);
   const el=document.getElementById('price-db-list');
   if(!el) return;
-  if(items.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">▦</div><div class="empty-text">ไม่พบรายการ</div></div>';return;}
-  // Group by category
-  const cats=S.categories.filter(c=>items.some(x=>x.catId===c.id));
-  el.innerHTML=cats.map(cat=>`
-    <div style="margin-bottom:20px">
-      <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${cat.icon} ${cat.name}</div>
-      <div class="price-db-grid">
-        ${items.filter(x=>x.catId===cat.id).map(p=>`
-          <div class="price-item">
-            <div class="price-item-name">${p.name}</div>
-            <div class="price-item-prices">
-              ค่าของ: <span>${fmt(p.mat)}</span> · ค่าแรง: <span>${fmt(p.lab)}</span>
-            </div>
-            <div class="price-item-unit">/ ${p.unit}</div>
-            <div style="margin-top:8px;display:flex;gap:6px">
-              <button class="btn btn-xs" onclick="editPriceItem('${p.id}')">แก้ไข</button>
-              <button class="btn btn-xs btn-red" onclick="deletePriceItem('${p.id}')">ลบ</button>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
+
   // Update filter dropdown
   const catFilter=document.getElementById('price-cat-filter');
-  if(catFilter && catFilter.options.length<=1){
-    S.categories.forEach(c=>catFilter.innerHTML+=`<option value="${c.id}">${c.name}</option>`);
+  if(catFilter){
+    const cur=catFilter.value;
+    catFilter.innerHTML='<option value="">ทุกหมวด</option>'+S.categories.map(c=>`<option value="${c.id}">${c.icon||''} ${c.name}</option>`).join('');
+    catFilter.value=cur;
   }
+
+  if(items.length===0&&!search&&!catF){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">▦</div><div class="empty-text">ยังไม่มีรายการราคา — เพิ่มจากฟอร์มด้านล่าง</div></div>';
+  } else {
+    const cats=S.categories.filter(c=>items.some(x=>x.catId===c.id));
+    const units=['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'];
+    el.innerHTML=cats.map(cat=>`
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+        <div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:12px;font-weight:500;color:var(--text2)">${cat.icon||''} ${cat.name}</div>
+        <table class="master-table">
+          <thead><tr>
+            <th>ชื่อรายการ</th>
+            <th style="width:90px">หน่วย</th>
+            <th class="right" style="width:130px">ค่าของ/หน่วย (฿)</th>
+            <th class="right" style="width:130px">ค่าแรง/หน่วย (฿)</th>
+            <th class="right" style="width:100px">รวม/หน่วย (฿)</th>
+            <th style="width:80px"></th>
+          </tr></thead>
+          <tbody>
+            ${items.filter(x=>x.catId===cat.id).map(p=>`
+              <tr id="prow-${p.id}">
+                <td><input value="${p.name}" id="pn-${p.id}" style="min-width:180px"></td>
+                <td><select id="pu-${p.id}" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px;width:100%">${units.map(u=>`<option ${p.unit===u?'selected':''}>${u}</option>`).join('')}</select></td>
+                <td><input type="number" value="${p.mat}" id="pm-${p.id}" class="num" style="min-width:90px"></td>
+                <td><input type="number" value="${p.lab}" id="pl-${p.id}" class="num" style="min-width:90px"></td>
+                <td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--accent);padding-right:10px">${fmt(p.mat+p.lab)}</td>
+                <td style="display:flex;gap:4px;padding:6px">
+                  <button class="btn btn-xs btn-green" onclick="savePriceRow('${p.id}')">💾</button>
+                  <button class="btn btn-xs btn-red" onclick="deletePriceItem('${p.id}')">×</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `).join('')}
+  }
+
+  // Add new item form
+  el.innerHTML += `
+    <div class="card">
+      <div class="card-title">+ เพิ่มรายการราคาใหม่</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:end">
+        <div class="form-group" style="margin:0"><label>ชื่อรายการ</label><input id="new-pname" placeholder="ชื่อรายการ"></div>
+        <div class="form-group" style="margin:0"><label>หมวด</label>
+          <select id="new-pcat" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;width:100%">
+            <option value="">-- เลือกหมวด --</option>
+            ${S.categories.map(c=>`<option value="${c.id}">${c.icon||''} ${c.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin:0"><label>หน่วย</label>
+          <select id="new-punit" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;width:100%">
+            ${['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'].map(u=>`<option>${u}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin:0"><label>ค่าของ/หน่วย</label><input type="number" id="new-pmat" value="0" class="num"></div>
+        <div class="form-group" style="margin:0"><label>ค่าแรง/หน่วย</label><input type="number" id="new-plab" value="0" class="num"></div>
+        <button class="btn btn-gold" onclick="addPriceRow()" style="align-self:end">+ เพิ่ม</button>
+      </div>
+    </div>
+  `;
 }
 
-function openPriceModal(){
-  ['pm-name'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('pm-mat').value=0;
-  document.getElementById('pm-lab').value=0;
-  const pm=document.getElementById('pm-cat');
-  pm.innerHTML='<option value="">-- เลือกหมวด --</option>'+S.categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-  openModal('modal-price');
+async function savePriceRow(id){
+  const p=S.priceDB.find(x=>x.id===id);
+  if(!p) return;
+  p.name=document.getElementById(`pn-${id}`).value.trim();
+  p.unit=document.getElementById(`pu-${id}`).value;
+  p.mat=parseFloat(document.getElementById(`pm-${id}`).value)||0;
+  p.lab=parseFloat(document.getElementById(`pl-${id}`).value)||0;
+  try{
+    await api(`/api/price-db/${id}`,{method:'PUT',body:{cat_id:p.catId,name:p.name,unit:p.unit,mat:p.mat,lab:p.lab}});
+    toast('บันทึก "'+p.name+'" แล้ว');
+    renderPriceDB();
+  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
 }
 
-function confirmAddPrice(){
-  const name=document.getElementById('pm-name').value.trim();
-  const catId=parseInt(document.getElementById('pm-cat').value);
+async function addPriceRow(){
+  const name=document.getElementById('new-pname').value.trim();
+  const catId=parseInt(document.getElementById('new-pcat').value);
   if(!name||!catId){toast('กรุณากรอกชื่อและเลือกหมวด','error');return;}
-  S.priceDB.push({
-    id:'p'+Date.now(),catId,name,
-    unit:document.getElementById('pm-unit').value,
-    mat:parseFloat(document.getElementById('pm-mat').value)||0,
-    lab:parseFloat(document.getElementById('pm-lab').value)||0
-  });
-  closeModal('modal-price');
-  renderPriceDB();
-  toast('เพิ่มราคา "'+name+'" แล้ว');
-  saveData();
+  const item={
+    id:'p'+Date.now(), catId, name,
+    unit:document.getElementById('new-punit').value,
+    mat:parseFloat(document.getElementById('new-pmat').value)||0,
+    lab:parseFloat(document.getElementById('new-plab').value)||0
+  };
+  try{
+    await api('/api/price-db',{method:'POST',body:{id:item.id,cat_id:catId,name:item.name,unit:item.unit,mat:item.mat,lab:item.lab}});
+    S.priceDB.push(item);
+    renderPriceDB();
+    toast('เพิ่ม "'+name+'" แล้ว');
+  }catch(e){ toast('เพิ่มล้มเหลว: '+e.message,'error'); }
 }
 
 function editPriceItem(id){
@@ -1386,89 +1980,172 @@ function editPriceItem(id){
   pm.innerHTML='<option value="">-- เลือกหมวด --</option>'+S.categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   pm.value=p.catId;
   const btn=document.querySelector('#modal-price .btn-gold');
-  btn.onclick=()=>{
+  btn.onclick=async ()=>{
     p.name=document.getElementById('pm-name').value;
     p.catId=parseInt(document.getElementById('pm-cat').value);
     p.unit=document.getElementById('pm-unit').value;
     p.mat=parseFloat(document.getElementById('pm-mat').value)||0;
     p.lab=parseFloat(document.getElementById('pm-lab').value)||0;
-    closeModal('modal-price');
-    renderPriceDB();
-    toast('แก้ไขราคาแล้ว');
-    saveData();
+    try{
+      await api(`/api/price-db/${p.id}`,{
+        method:'PUT',
+        body:{cat_id:p.catId, name:p.name, unit:p.unit, mat:p.mat, lab:p.lab}
+      });
+      closeModal('modal-price');
+      renderPriceDB();
+      toast('แก้ไขราคาแล้ว');
+    }catch(e){ toast('แก้ไขล้มเหลว: '+e.message,'error'); }
     btn.onclick=confirmAddPrice;
   };
   openModal('modal-price');
 }
 
-function deletePriceItem(id){
+async function deletePriceItem(id){
   const p=S.priceDB.find(x=>x.id===id);
   if(!p) return;
-  S.priceDB=S.priceDB.filter(x=>x.id!==id);
-  renderPriceDB();
-  toast('ลบ "'+p.name+'" แล้ว');
-  saveData();
+  try{
+    await api(`/api/price-db/${id}`,{method:'DELETE'});
+    S.priceDB=S.priceDB.filter(x=>x.id!==id);
+    renderPriceDB();
+    toast('ลบ "'+p.name+'" แล้ว');
+  }catch(e){ toast('ลบล้มเหลว: '+e.message,'error'); }
 }
 
 // ================================================================
 // MASTER TEMPLATE
 // ================================================================
+// sub items format: {name, unit, mat, lab} or legacy string
+function subName(s){ return typeof s==='object'?s.name:s; }
+function subUnit(s){ return typeof s==='object'?(s.unit||'งาน'):'งาน'; }
+function subMat(s){ return typeof s==='object'?(s.mat||0):0; }
+function subLab(s){ return typeof s==='object'?(s.lab||0):0; }
+
 function renderMaster(){
   const el=document.getElementById('master-content');
   if(!el) return;
-  el.innerHTML=S.categories.map((cat,ci)=>`
-    <div class="card">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-        <input value="${cat.icon}" onchange="S.categories[${ci}].icon=this.value" style="width:40px;text-align:center;font-size:18px">
-        <input value="${cat.name}" onchange="S.categories[${ci}].name=this.value" style="flex:1;font-weight:500">
+  const units=['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'];
+  el.innerHTML=`
+  <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+    <button class="btn btn-gold" onclick="addCategoryModal()">+ เพิ่มหมวดงาน</button>
+  </div>`+
+  S.categories.map((cat,ci)=>`
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <input value="${cat.icon||'📦'}" id="cat-icon-${ci}" style="width:38px;text-align:center;font-size:18px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:4px">
+        <input value="${cat.name}" id="cat-name-${ci}" style="flex:1;font-size:15px;font-weight:500;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">
+        <button class="btn btn-sm" onclick="saveCategoryHeader(${ci})">บันทึกชื่อ</button>
         <button class="btn btn-sm btn-red" onclick="removeCategory(${ci})">ลบหมวด</button>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">รายการย่อย</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${cat.sub.map((s,si)=>`
-          <div class="tag" style="cursor:default">
-            ${s}
-            <span onclick="removeSub(${ci},${si})" style="cursor:pointer;opacity:.6;margin-left:2px">×</span>
-          </div>
-        `).join('')}
-        <div class="tag" onclick="addSub(${ci})" style="color:var(--accent);border-color:var(--accent)">+ เพิ่ม</div>
+      <table class="master-table">
+        <thead><tr>
+          <th>ชื่อรายการ</th>
+          <th style="width:90px">หน่วย</th>
+          <th class="right" style="width:130px">ค่าของ/หน่วย (฿)</th>
+          <th class="right" style="width:130px">ค่าแรง/หน่วย (฿)</th>
+          <th style="width:36px"></th>
+        </tr></thead>
+        <tbody id="sub-tbody-${ci}">
+          ${cat.sub.map((s,si)=>`
+            <tr>
+              <td><input value="${subName(s)}" id="sub-name-${ci}-${si}" style="min-width:180px"></td>
+              <td><select id="sub-unit-${ci}-${si}" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px;width:100%">
+                ${units.map(u=>`<option ${subUnit(s)===u?'selected':''}>${u}</option>`).join('')}
+              </select></td>
+              <td><input type="number" value="${subMat(s)}" id="sub-mat-${ci}-${si}" class="num" style="min-width:90px"></td>
+              <td><input type="number" value="${subLab(s)}" id="sub-lab-${ci}-${si}" class="num" style="min-width:90px"></td>
+              <td><button class="btn btn-xs btn-red" onclick="removeSub(${ci},${si})">×</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+        <tfoot>
+          <tr class="master-add-row" id="add-row-${ci}">
+            <td><input id="new-sub-name-${ci}" placeholder="ชื่อรายการย่อย"></td>
+            <td><select id="new-sub-unit-${ci}" style="background:var(--bg4);border:1px solid var(--border);border-radius:var(--r);padding:6px 8px;color:var(--text);font-size:12px;width:100%">${units.map(u=>`<option>${u}</option>`).join('')}</select></td>
+            <td><input type="number" id="new-sub-mat-${ci}" value="0" class="num" placeholder="0"></td>
+            <td><input type="number" id="new-sub-lab-${ci}" value="0" class="num" placeholder="0"></td>
+            <td><button class="btn btn-xs btn-green" onclick="addSubRow(${ci})">+</button></td>
+          </tr>
+        </tfoot>
+      </table>
+      <div style="display:flex;justify-content:flex-end;margin-top:10px">
+        <button class="btn btn-gold" onclick="saveCategoryFull(${ci})">💾 บันทึกหมวดนี้</button>
       </div>
     </div>
   `).join('');
 }
 
-function addCategoryModal(){
+function addSubRow(ci){
+  const name=document.getElementById(`new-sub-name-${ci}`).value.trim();
+  if(!name){toast('กรุณาใส่ชื่อรายการ','error');return;}
+  const unit=document.getElementById(`new-sub-unit-${ci}`).value;
+  const mat=parseFloat(document.getElementById(`new-sub-mat-${ci}`).value)||0;
+  const lab=parseFloat(document.getElementById(`new-sub-lab-${ci}`).value)||0;
+  S.categories[ci].sub.push({name,unit,mat,lab});
+  renderMaster();
+}
+
+async function saveCategoryHeader(ci){
+  const cat=S.categories[ci];
+  cat.icon=document.getElementById(`cat-icon-${ci}`).value;
+  cat.name=document.getElementById(`cat-name-${ci}`).value;
+  try{
+    await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
+    toast('บันทึกชื่อหมวดแล้ว');
+    renderCatTags();
+  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
+}
+
+async function saveCategoryFull(ci){
+  const cat=S.categories[ci];
+  cat.icon=document.getElementById(`cat-icon-${ci}`).value;
+  cat.name=document.getElementById(`cat-name-${ci}`).value;
+  // Collect all edited sub rows
+  cat.sub=cat.sub.map((_,si)=>({
+    name: document.getElementById(`sub-name-${ci}-${si}`)?.value||subName(cat.sub[si]),
+    unit: document.getElementById(`sub-unit-${ci}-${si}`)?.value||subUnit(cat.sub[si]),
+    mat: parseFloat(document.getElementById(`sub-mat-${ci}-${si}`)?.value)||0,
+    lab: parseFloat(document.getElementById(`sub-lab-${ci}-${si}`)?.value)||0
+  }));
+  try{
+    await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
+    toast('บันทึกหมวด "'+cat.name+'" เรียบร้อย');
+    renderMaster();
+    renderCatTags();
+  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
+}
+
+async function addCategoryModal(){
   const name=prompt('ชื่อหมวดงานใหม่:');
   if(!name) return;
-  S.categories.push({id:Date.now(),name,icon:'📦',sub:[]});
-  renderMaster();
-  toast('เพิ่มหมวด "'+name+'" แล้ว');
-  saveData();
+  try{
+    const cat=await api('/api/categories',{method:'POST',body:{name,icon:'📦',sub:[]}});
+    S.categories.push({id:cat.id,name:cat.name,icon:cat.icon||'📦',sub:[]});
+    renderMaster();
+    toast('เพิ่มหมวด "'+name+'" แล้ว');
+  }catch(e){ toast('เพิ่มหมวดล้มเหลว: '+e.message,'error'); }
 }
 
-function removeCategory(i){
+async function removeCategory(i){
   if(!confirm('ลบหมวด "'+S.categories[i].name+'" ?')) return;
   const id=S.categories[i].id;
-  S.categories.splice(i,1);
-  S.selectedCats=S.selectedCats.filter(x=>x!==id);
-  renderMaster();
-  renderCatTags();
-  renderBoqTable();
-  saveData();
+  try{
+    await api(`/api/categories/${id}`,{method:'DELETE'});
+    S.categories.splice(i,1);
+    S.selectedCats=S.selectedCats.filter(x=>x!==id);
+    saveUiState();
+    renderMaster();
+    renderCatTags();
+    renderBoqTable();
+  }catch(e){ toast('ลบหมวดล้มเหลว: '+e.message,'error'); }
 }
 
-function addSub(ci){
-  const s=prompt('ชื่อรายการย่อย:');
-  if(!s) return;
-  S.categories[ci].sub.push(s);
-  renderMaster();
-  saveData();
-}
-
-function removeSub(ci,si){
+async function removeSub(ci,si){
   S.categories[ci].sub.splice(si,1);
-  renderMaster();
-  saveData();
+  const cat=S.categories[ci];
+  try{
+    await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
+    renderMaster();
+  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
 }
 
 // ================================================================
@@ -1959,59 +2636,332 @@ function updateAllSelects(){
 }
 
 // ================================================================
-// LOCAL STORAGE
+// LOAD / SAVE
 // ================================================================
-function saveData(){
+async function loadData(){
   try{
-    localStorage.setItem('engear_v2',JSON.stringify({
-      projects:S.projects,
-      categories:S.categories,
-      priceDB:S.priceDB,
-      lineItems:S.lineItems,
-      selectedCats:S.selectedCats,
-      activeProjectId:S.activeProjectId,
-      revisions:S.revisions,
-      extras:S.extras
+    const [projectsRes, categories, priceDB, revisions] = await Promise.all([
+      api('/api/projects'),
+      api('/api/categories'),
+      api('/api/price-db'),
+      api('/api/revisions')
+    ]);
+    const projects = projectsRes?.data || projectsRes || [];
+    if(projects.length) S.projects = projects.map(p=>({
+      id:p.id, name:p.name, quoNo:p.quo_no||'',
+      client:p.client||'', company:p.company||'',
+      phone:p.phone||'', email:p.email||'', location:p.location||'',
+      quotation_status:p.quotation_status||'draft'
     }));
-  }catch(e){console.warn('Save failed',e);}
-}
-
-function loadData(){
-  try{
-    const saved=localStorage.getItem('engear_v2');
-    if(saved){
-      const d=JSON.parse(saved);
-      // merge: ถ้า localStorage มีข้อมูล ใช้ของ localStorage
-      // ถ้าไม่มี (ครั้งแรก) ใช้ default ใน S ที่กำหนดไว้แล้ว
-      if(d.projects?.length) S.projects=d.projects;
-      if(d.categories?.length) S.categories=d.categories;
-      if(d.priceDB?.length) S.priceDB=d.priceDB;
-      if(Array.isArray(d.lineItems)) S.lineItems=d.lineItems;
-      if(Array.isArray(d.selectedCats)) S.selectedCats=d.selectedCats;
-      if(d.activeProjectId!=null) S.activeProjectId=d.activeProjectId;
-      if(d.revisions?.length) S.revisions=d.revisions;
-      if(d.extras) S.extras={...S.extras,...d.extras};
-    } else {
-      // ครั้งแรกที่เปิด — save default data ลง localStorage เลย
-      saveData();
+    if(categories.length) S.categories = categories;
+    if(priceDB.length) S.priceDB = priceDB.map(p=>({
+      id:p.id, catId:p.cat_id, name:p.name,
+      unit:p.unit, mat:p.mat||0, lab:p.lab||0
+    }));
+    if(revisions.length) S.revisions = revisions.map(r=>({
+      id:r.id, projId:r.project_id, version:r.version,
+      date:r.date, note:r.note, items:r.items, total:r.total
+    }));
+    loadUiState();
+    if(S.activeProjectId){
+      await loadLineItemsForProject(S.activeProjectId);
+      await loadExtrasForProject(S.activeProjectId);
     }
   }catch(e){
-    console.warn('Load failed, using defaults',e);
-    saveData();
+    console.warn('API load failed, using localStorage fallback',e);
+    try{
+      const saved = localStorage.getItem('engear_v2');
+      if(saved){
+        const d = JSON.parse(saved);
+        if(d.projects?.length) S.projects=d.projects;
+        if(d.categories?.length) S.categories=d.categories;
+        if(d.priceDB?.length) S.priceDB=d.priceDB;
+        if(Array.isArray(d.lineItems)) S.lineItems=d.lineItems;
+        if(Array.isArray(d.selectedCats)) S.selectedCats=d.selectedCats;
+        if(d.activeProjectId!=null) S.activeProjectId=d.activeProjectId;
+        if(d.revisions?.length) S.revisions=d.revisions;
+        if(d.extras) S.extras={...S.extras,...d.extras};
+      }
+    }catch(e2){}
   }
+}
+
+// saveData เหลือแค่บันทึก UI state
+function saveData(){
+  saveUiState();
 }
 
 function clearData(){
   if(confirm('ล้างข้อมูลทั้งหมดและเริ่มใหม่?')){
     localStorage.removeItem('engear_v2');
+    localStorage.removeItem('engear_ui');
     location.reload();
   }
 }
 
+// ================================================================
+// UNSAVED CHANGES TRACKING
+// ================================================================
+let _isDirty = false;
+function markDirty(){
+  _isDirty = true;
+  const badge = document.getElementById('unsaved-badge');
+  if (badge) badge.classList.add('show');
+}
+function markClean(){
+  _isDirty = false;
+  const badge = document.getElementById('unsaved-badge');
+  if (badge) badge.classList.remove('show');
+}
+
+// ================================================================
+// DUPLICATE PROJECT
+// ================================================================
+async function duplicateProject(id){
+  const p = S.projects.find(x=>x.id===id);
+  if (!p) return;
+  if (!confirm(`คัดลอกโครงการ "${p.name}" ?`)) return;
+  try {
+    const newProj = await api(`/api/projects/${id}/duplicate`, { method:'POST' });
+    S.projects.push({
+      id: newProj.id, name: newProj.name, quoNo: newProj.quo_no||'',
+      client: newProj.client||'', company: newProj.company||'',
+      phone: newProj.phone||'', email: newProj.email||'', location: newProj.location||'',
+      quotation_status: newProj.quotation_status||'draft'
+    });
+    renderProjects();
+    updateAllSelects();
+    toast(`คัดลอก "${p.name}" เรียบร้อย — ดูที่ด้านล่างสุดของรายการ`);
+  } catch(e) { toast('คัดลอกล้มเหลว: '+e.message,'error'); }
+}
+
+// ================================================================
+// DELETE PROJECT
+// ================================================================
+async function deleteProject(id){
+  const p = S.projects.find(x=>x.id===id);
+  if (!p || !confirm(`ลบโครงการ "${p.name}" ? (ข้อมูลทั้งหมดจะหายถาวร)`)) return;
+  try {
+    await api(`/api/projects/${id}`, { method:'DELETE' });
+    S.projects = S.projects.filter(x=>x.id!==id);
+    if (S.activeProjectId === id) { S.activeProjectId=null; S.lineItems=[]; saveUiState(); }
+    renderProjects();
+    updateAllSelects();
+    toast(`ลบ "${p.name}" แล้ว`);
+  } catch(e) { toast('ลบล้มเหลว: '+e.message,'error'); }
+}
+
+// ================================================================
+// SEND EMAIL
+// ================================================================
+function sendEmailModal(){
+  const proj = S.projects.find(x=>x.id===S.activeProjectId);
+  document.getElementById('email-to').value = proj?.email||'';
+  document.getElementById('email-subject').value = `ใบเสนอราคา ${proj?.quoNo||''} — ${proj?.name||''}`;
+  document.getElementById('email-body').value = `เรียนคุณ ${proj?.client||''},\n\nขอส่งใบเสนอราคาสำหรับโครงการ "${proj?.name||''}" ตามที่แนบมา\n\nขอบคุณครับ/ค่ะ\nทีมงาน ENGEAR`;
+  openModal('modal-email');
+}
+
+async function confirmSendEmail(){
+  const to = document.getElementById('email-to').value.trim();
+  const subject = document.getElementById('email-subject').value.trim();
+  const body = document.getElementById('email-body').value;
+  if (!to || !subject) { toast('กรุณากรอก Email และหัวข้อ','error'); return; }
+  try {
+    const result = await api('/api/email/send', {
+      method:'POST',
+      body:{ to, subject, text: body, html: `<pre style="font-family:sans-serif">${body}</pre>` }
+    });
+    closeModal('modal-email');
+    toast(result.message || 'ส่ง Email เรียบร้อย');
+  } catch(e) { toast('ส่ง Email ล้มเหลว: '+e.message,'error'); }
+}
+
+// ================================================================
+// USERS MANAGEMENT
+// ================================================================
+async function renderUsers(){
+  if (!AUTH.user || AUTH.user.role !== 'admin') {
+    document.getElementById('users-content').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><div class="empty-text">ต้องมีสิทธิ์ Admin</div></div>';
+    return;
+  }
+  try {
+    const users = await api('/api/auth/users');
+    const pending = users.filter(u=>u.status==='pending');
+    const active = users.filter(u=>u.status!=='pending');
+    const roleLabel = { admin:'Admin', cfo:'CFO', readonly:'Read-Only' };
+    const roleBadge = { admin:'badge-gold', cfo:'badge-blue', readonly:'badge-gray' };
+    const renderRow = u => `<tr>
+      <td>
+        <div style="font-weight:500">${u.username}</div>
+        <div style="font-size:11px;color:var(--text3)">${u.email||'-'}</div>
+      </td>
+      <td>
+        <select onchange="updateUserRole(${u.id},this.value,'${u.status}')" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:4px 8px;color:var(--text);font-size:12px" ${u.id===AUTH.user.id?'disabled':''}>
+          <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+          <option value="cfo" ${u.role==='cfo'?'selected':''}>CFO</option>
+          <option value="readonly" ${u.role==='readonly'?'selected':''}>Read-Only</option>
+        </select>
+      </td>
+      <td>
+        <span class="status-badge status-${u.status||'active'}">${u.status==='pending'?'รออนุมัติ':u.status==='disabled'?'ปิดใช้งาน':'ใช้งาน'}</span>
+      </td>
+      <td style="font-size:11px;color:var(--text3)">${u.created_at?.slice(0,10)||'-'}</td>
+      <td style="display:flex;gap:6px;align-items:center">
+        ${u.status==='pending'?`<button class="btn btn-xs btn-green" onclick="approveUser(${u.id},'${u.username}')">อนุมัติ</button>`:''}
+        ${u.status==='active'&&u.id!==AUTH.user.id?`<button class="btn btn-xs" onclick="updateUserRole(${u.id},'${u.role}','disabled')">ปิดใช้งาน</button>`:''}
+        ${u.status==='disabled'?`<button class="btn btn-xs btn-green" onclick="updateUserRole(${u.id},'${u.role}','active')">เปิดใช้งาน</button>`:''}
+        ${u.id!==AUTH.user.id?`<button class="btn btn-xs btn-red" onclick="deleteUser(${u.id},'${u.username}')">ลบ</button>`:''}
+      </td>
+    </tr>`;
+
+    document.getElementById('users-content').innerHTML = `
+      ${pending.length?`
+      <div class="card" style="border-color:rgba(245,158,11,.3)">
+        <div class="card-title" style="color:#f59e0b">รออนุมัติ <span>${pending.length} คน</span></div>
+        <table class="user-table">
+          <thead><tr><th>ผู้ใช้</th><th>สิทธิ์</th><th>สถานะ</th><th>วันที่สมัคร</th><th>จัดการ</th></tr></thead>
+          <tbody>${pending.map(renderRow).join('')}</tbody>
+        </table>
+      </div>`:''}
+      <div class="card">
+        <div class="card-title">ผู้ใช้ทั้งหมด <span>${active.length} คน</span></div>
+        <table class="user-table">
+          <thead><tr><th>ผู้ใช้</th><th>สิทธิ์</th><th>สถานะ</th><th>วันที่สมัคร</th><th>จัดการ</th></tr></thead>
+          <tbody>${active.map(renderRow).join('')}</tbody>
+        </table>
+      </div>
+      <div class="card" style="background:var(--bg3)">
+        <div class="card-title">คำอธิบายสิทธิ์</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:12px">
+          <div><span class="badge badge-gold" style="margin-bottom:6px;display:inline-flex">Admin</span><br><span style="color:var(--text2)">จัดการได้ทุกอย่าง รวมถึงผู้ใช้</span></div>
+          <div><span class="badge badge-blue" style="margin-bottom:6px;display:inline-flex">CFO</span><br><span style="color:var(--text2)">แก้ไขโครงการ BOQ และราคาได้ทุกอย่าง</span></div>
+          <div><span class="badge badge-gray" style="margin-bottom:6px;display:inline-flex">Read-Only</span><br><span style="color:var(--text2)">ดูข้อมูลได้อย่างเดียว ไม่สามารถแก้ไข</span></div>
+        </div>
+      </div>`;
+  } catch(e) { toast('โหลด users ล้มเหลว: '+e.message,'error'); }
+}
+
+async function approveUser(id, username){
+  try {
+    await api(`/api/auth/users/${id}`, { method:'PUT', body:{ status:'active' } });
+    toast(`อนุมัติ "${username}" เรียบร้อย`);
+    renderUsers();
+  } catch(e) { toast('อนุมัติไม่สำเร็จ: '+e.message,'error'); }
+}
+
+async function updateUserRole(id, role, status){
+  try {
+    await api(`/api/auth/users/${id}`, { method:'PUT', body:{ role, status } });
+    toast('อัปเดตสิทธิ์เรียบร้อย');
+    renderUsers();
+  } catch(e) { toast('อัปเดตไม่สำเร็จ: '+e.message,'error'); }
+}
+
+function openAddUserModal(){
+  ['au-username','au-password'].forEach(id=>document.getElementById(id).value='');
+  openModal('modal-add-user');
+}
+
+async function confirmAddUser(){
+  const username = document.getElementById('au-username').value.trim();
+  const password = document.getElementById('au-password').value;
+  const role = document.getElementById('au-role').value;
+  if (!username||!password){toast('กรุณากรอกข้อมูลให้ครบ','error');return;}
+  try {
+    await api('/api/auth/register',{method:'POST',body:{username,password,role}});
+    closeModal('modal-add-user');
+    toast(`สร้างผู้ใช้ "${username}" (${role}) เรียบร้อย`);
+    renderUsers();
+  } catch(e){toast('สร้างผู้ใช้ล้มเหลว: '+e.message,'error');}
+}
+
+async function deleteUser(id, username){
+  if (!confirm(`ลบผู้ใช้ "${username}" ?`)) return;
+  try {
+    await api(`/api/auth/users/${id}`,{method:'DELETE'});
+    toast(`ลบ "${username}" แล้ว`);
+    renderUsers();
+  } catch(e){toast('ลบล้มเหลว: '+e.message,'error');}
+}
+
+async function confirmChangePw(){
+  const current = document.getElementById('pw-current').value;
+  const newPw = document.getElementById('pw-new').value;
+  if (!current||!newPw){toast('กรุณากรอกข้อมูลให้ครบ','error');return;}
+  try {
+    await api('/api/auth/password',{method:'PUT',body:{current_password:current,new_password:newPw}});
+    closeModal('modal-change-pw');
+    toast('เปลี่ยนรหัสผ่านเรียบร้อย');
+  } catch(e){toast('เปลี่ยนรหัสผ่านล้มเหลว: '+e.message,'error');}
+}
+
+// ================================================================
+// ANALYTICS — Enhanced Dashboard
+// ================================================================
+function renderDashboardAnalytics(){
+  // Project totals bar chart (top 5)
+  const projTotals = S.projects.map(p=>{
+    const revs = S.revisions.filter(r=>r.projId===p.id);
+    const latest = revs[revs.length-1];
+    return { name:p.name, quoNo:p.quoNo, total: latest?.total||0 };
+  }).sort((a,b)=>b.total-a.total).slice(0,5);
+  const maxTotal = Math.max(...projTotals.map(x=>x.total), 1);
+  const el = document.getElementById('dash-analytics');
+  if (!el) return;
+  el.innerHTML = projTotals.length ? projTotals.map(p=>`
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span style="color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%">${p.name}</span>
+        <span style="font-family:var(--mono);color:var(--accent)">${fmt(p.total)} ฿</span>
+      </div>
+      <div class="analytics-bar"><div class="analytics-bar-fill" style="width:${(p.total/maxTotal*100).toFixed(1)}%"></div></div>
+    </div>
+  `).join('') : '<div style="color:var(--text3);font-size:12px">ยังไม่มีข้อมูล revision</div>';
+}
+
+// ================================================================
 // INIT
-loadData();
-updateAllSelects();
-renderDashboard();
+// ================================================================
+async function initApp(){
+  await loadData();
+  updateAllSelects();
+  renderDashboard();
+  renderUserPill();
+  // Add analytics section to dashboard
+  setTimeout(renderDashboardAnalytics, 100);
+}
+
+(async()=>{
+  // Check if already logged in
+  if (AUTH.token) {
+    try {
+      const me = await fetch('/api/auth/me', {
+        headers:{ Authorization:'Bearer '+AUTH.token }
+      });
+      if (me.ok) {
+        AUTH.user = await me.json();
+        document.getElementById('login-screen').style.display='none';
+        await initApp();
+        return;
+      }
+    } catch(e) {}
+    // Token invalid — clear it
+    localStorage.removeItem('engear_token');
+    AUTH.token = null;
+  }
+  // Check if first run (no users)
+  try {
+    const res = await fetch('/api/auth/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username:'__check__', password:'__check__' })
+    });
+    const data = await res.json();
+    // If error says "no users" or similar, show register form
+    // We check by trying to see if any user exists via register endpoint behavior
+  } catch(e){}
+  // Show login screen
+})();
 </script>
 </body>
 </html>
