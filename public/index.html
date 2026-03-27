@@ -1859,6 +1859,25 @@ function updateRevFilterSelect(){
 // ================================================================
 // PRICE DB
 // ================================================================
+function priceRowHtml(p, units){
+  var id=p.id;
+  var opts='';
+  for(var i=0;i<units.length;i++){
+    opts+='<option'+(p.unit===units[i]?' selected':'')+'>'+units[i]+'</option>';
+  }
+  return '<tr id="prow-'+id+'">'
+    +'<td><input value="'+p.name.replace(/"/g,'&quot;')+'" id="pn-'+id+'" style="min-width:180px"></td>'
+    +'<td><select id="pu-'+id+'" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px;width:100%">'+opts+'</select></td>'
+    +'<td><input type="number" value="'+p.mat+'" id="pm-'+id+'" class="num" style="min-width:90px"></td>'
+    +'<td><input type="number" value="'+p.lab+'" id="pl-'+id+'" class="num" style="min-width:90px"></td>'
+    +'<td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--accent);padding-right:10px">'+fmt(p.mat+p.lab)+'</td>'
+    +'<td style="display:flex;gap:4px;padding:6px">'
+    +'<button class="btn btn-xs btn-green" data-rid="'+id+'" onclick="savePriceRow(this.dataset.rid)">&#128190;</button>'
+    +'<button class="btn btn-xs btn-red" data-rid="'+id+'" onclick="deletePriceItem(this.dataset.rid)">&#215;</button>'
+    +'</td></tr>';
+}
+
+
 function renderPriceDB(){
   const search=(document.getElementById('price-search')?.value||'').toLowerCase();
   const catF=document.getElementById('price-cat-filter')?.value||'';
@@ -1876,43 +1895,36 @@ function renderPriceDB(){
     catFilter.value=cur;
   }
 
+  const units=['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'];
+  var html='';
   if(items.length===0&&!search&&!catF){
-    el.innerHTML='<div class="empty-state"><div class="empty-icon">▦</div><div class="empty-text">ยังไม่มีรายการราคา — เพิ่มจากฟอร์มด้านล่าง</div></div>';
+    html='<div class="empty-state"><div class="empty-icon">&#9638;</div><div class="empty-text">ยังไม่มีรายการราคา — เพิ่มจากฟอร์มด้านล่าง</div></div>';
   } else {
     const cats=S.categories.filter(c=>items.some(x=>x.catId===c.id));
-    const units=['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'];
-    el.innerHTML=cats.map(cat=>`
-      <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
-        <div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:12px;font-weight:500;color:var(--text2)">${cat.icon||''} ${cat.name}</div>
-        <table class="master-table">
-          <thead><tr>
-            <th>ชื่อรายการ</th>
-            <th style="width:90px">หน่วย</th>
-            <th class="right" style="width:130px">ค่าของ/หน่วย (฿)</th>
-            <th class="right" style="width:130px">ค่าแรง/หน่วย (฿)</th>
-            <th class="right" style="width:100px">รวม/หน่วย (฿)</th>
-            <th style="width:80px"></th>
-          </tr></thead>
-          <tbody>
-            ${items.filter(x=>x.catId===cat.id).map(p=>`
-              <tr id="prow-${p.id}">
-                <td><input value="${p.name}" id="pn-${p.id}" style="min-width:180px"></td>
-                <td><select id="pu-${p.id}" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px;width:100%">${units.map(u=>`<option ${p.unit===u?'selected':''}>${u}</option>`).join('')}</select></td>
-                <td><input type="number" value="${p.mat}" id="pm-${p.id}" class="num" style="min-width:90px"></td>
-                <td><input type="number" value="${p.lab}" id="pl-${p.id}" class="num" style="min-width:90px"></td>
-                <td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--accent);padding-right:10px">${fmt(p.mat+p.lab)}</td>
-                <td style="display:flex;gap:4px;padding:6px">
-                  <button class="btn btn-xs btn-green" onclick="savePriceRow('${p.id}')">💾</button>
-                  <button class="btn btn-xs btn-red" onclick="deletePriceItem('${p.id}')">×</button>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>
-    `).join('')}
+    for(var ci=0;ci<cats.length;ci++){
+      const cat=cats[ci];
+      const catItems=items.filter(x=>x.catId===cat.id);
+      var rows='';
+      for(var ri=0;ri<catItems.length;ri++){
+        rows+=priceRowHtml(catItems[ri],units);
+      }
+      html+='<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">'
+        +'<div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:12px;font-weight:500;color:var(--text2)">'+(cat.icon||'')+' '+cat.name+'</div>'
+        +'<table class="master-table"><thead><tr>'
+        +'<th>ชื่อรายการ</th>'
+        +'<th style="width:90px">หน่วย</th>'
+        +'<th class="right" style="width:130px">ค่าของ/หน่วย (฿)</th>'
+        +'<th class="right" style="width:130px">ค่าแรง/หน่วย (฿)</th>'
+        +'<th class="right" style="width:100px">รวม/หน่วย (฿)</th>'
+        +'<th style="width:80px"></th>'
+        +'</tr></thead><tbody>'+rows+'</tbody></table></div>';
+    }
+  }
+  el.innerHTML=html;
 
   // Add new item form
+  const catOpts=S.categories.map(c=>`<option value="${c.id}">${c.icon||''} ${c.name}</option>`).join('');
+  const unitOpts=units.map(u=>`<option>${u}</option>`).join('');
   el.innerHTML += `
     <div class="card">
       <div class="card-title">+ เพิ่มรายการราคาใหม่</div>
@@ -1920,13 +1932,12 @@ function renderPriceDB(){
         <div class="form-group" style="margin:0"><label>ชื่อรายการ</label><input id="new-pname" placeholder="ชื่อรายการ"></div>
         <div class="form-group" style="margin:0"><label>หมวด</label>
           <select id="new-pcat" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;width:100%">
-            <option value="">-- เลือกหมวด --</option>
-            ${S.categories.map(c=>`<option value="${c.id}">${c.icon||''} ${c.name}</option>`).join('')}
+            <option value="">-- เลือกหมวด --</option>${catOpts}
           </select>
         </div>
         <div class="form-group" style="margin:0"><label>หน่วย</label>
           <select id="new-punit" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;width:100%">
-            ${['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'].map(u=>`<option>${u}</option>`).join('')}
+            ${unitOpts}
           </select>
         </div>
         <div class="form-group" style="margin:0"><label>ค่าของ/หน่วย</label><input type="number" id="new-pmat" value="0" class="num"></div>
