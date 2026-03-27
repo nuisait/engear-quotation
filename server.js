@@ -28,6 +28,7 @@ app.get('/{*path}', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
-  console.log(`📦 Database: ${process.env.DATABASE_URL ? 'PostgreSQL (Supabase)' : 'No DATABASE_URL set!'}`);
+  const dbInfo = process.env.DB_HOST ? `PostgreSQL (${process.env.DB_HOST})` : process.env.DATABASE_URL ? 'PostgreSQL (URL)' : 'No database configured!';
+  console.log(`📦 Database: ${dbInfo}`);;
   console.log(`🔐 Auth: JWT (${process.env.JWT_SECRET ? 'custom secret' : 'default secret — set JWT_SECRET in production'})`);
 });
