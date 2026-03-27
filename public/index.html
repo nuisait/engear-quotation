@@ -1526,7 +1526,7 @@ function onMCatChange(){
     cat.sub.filter(s=>!dbNames.includes(subName(s))).forEach(s=>{
       const nm=subName(s), mat=subMat(s), lab=subLab(s), unit=subUnit(s);
       const hasPrice=mat>0||lab>0;
-      html+=`<div onclick="fillFromSub(${JSON.stringify(JSON.stringify({name:nm,unit,mat,lab}))})" style="
+      html+=`<div onclick="fillFromSubEl(this)" data-name="${nm.replace(/"/g,'&quot;')}" data-unit="${unit}" data-mat="${mat}" data-lab="${lab}" style="
         background:var(--bg3);border:1px dashed var(--border2);border-radius:var(--r);
         padding:7px 10px;cursor:pointer;transition:all .15s;min-width:140px;flex:1
       " onmouseover="this.style.borderColor='var(--text3)'"
@@ -1561,16 +1561,17 @@ function fillFromPriceDB(priceId){
   document.getElementById('m-qty').focus();
 }
 
-function fillFromSub(jsonStr){
-  let s; try{ s=JSON.parse(jsonStr); }catch(e){ s={name:jsonStr,unit:'งาน',mat:0,lab:0}; }
-  document.getElementById('m-desc').value = typeof s==='object'?s.name:s;
-  const mat=typeof s==='object'?(s.mat||0):0;
-  const lab=typeof s==='object'?(s.lab||0):0;
+function fillFromSubEl(el){
+  fillFromSub(el.dataset.name, el.dataset.unit, parseFloat(el.dataset.mat)||0, parseFloat(el.dataset.lab)||0);
+}
+function fillFromSub(name, unit, mat, lab){
+  document.getElementById('m-desc').value = name||'';
+  mat=parseFloat(mat)||0; lab=parseFloat(lab)||0;
   document.getElementById('m-mat').value = mat;
   document.getElementById('m-lab').value = lab;
   document.getElementById('m-total-price').value = mat+lab;
   const unitSel=document.getElementById('m-unit');
-  if(s.unit && unitSel) unitSel.value=s.unit;
+  if(unit && unitSel) unitSel.value=unit;
   calcMTotal();
   if(mat===0&&lab===0) document.getElementById('m-mat').focus();
 }
@@ -1910,7 +1911,6 @@ function renderPriceDB(){
         </table>
       </div>
     `).join('')}
-  }
 
   // Add new item form
   el.innerHTML += `
