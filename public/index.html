@@ -280,9 +280,16 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 .quo-status-btn.active-submitted { background: var(--blue-dim); color: var(--blue); border-color: rgba(96,165,250,.3); }
 .quo-status-btn.active-paid { background: var(--green-dim); color: var(--green); border-color: rgba(74,222,128,.3); }
 
-/* BACK BUTTON */
-.back-btn { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--r); font-size: 13px; cursor: pointer; border: 1px solid var(--border2); background: var(--bg3); color: var(--text2); transition: all .15s; }
-.back-btn:hover { color: var(--text); border-color: var(--text3); }
+/* MASTER TEMPLATE TABLE */
+.master-table { width:100%; border-collapse:collapse; }
+.master-table th { font-size:11px; color:var(--text3); text-align:left; padding:7px 10px; border-bottom:1px solid var(--border); text-transform:uppercase; letter-spacing:.5px; }
+.master-table th.right { text-align:right; }
+.master-table td { padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.03); }
+.master-table td input { background:transparent; border:none; padding:4px 6px; border-radius:4px; font-size:13px; width:100%; }
+.master-table td input:focus { background:var(--bg3); border:1px solid var(--accent); outline:none; }
+.master-table td input.num { text-align:right; font-family:var(--mono); }
+.master-add-row td { padding:6px; background:var(--bg3); }
+.master-add-row td input { background:var(--bg4); border:1px solid var(--border); padding:6px 8px; border-radius:var(--r); }
 </style>
 </head>
 <body>
@@ -564,18 +571,15 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
     <!-- PRICE DB -->
     <div id="page-pricedb" class="page">
       <div class="page-header">
-        <div><div class="page-title">Unit Price Database</div><div class="page-subtitle">ราคามาตรฐานค่าของและค่าแรง</div></div>
-        <div class="header-actions">
-          <button class="btn" onclick="openPriceModal()">+ เพิ่มรายการ</button>
-        </div>
+        <div><div class="page-title">Unit Price Database</div><div class="page-subtitle">ราคามาตรฐานค่าของและค่าแรงต่อหน่วย</div></div>
       </div>
       <div class="content">
-        <div class="form-row cols4" style="margin-bottom:16px">
-          <div class="form-group" style="grid-column:span 2">
+        <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-end">
+          <div class="form-group" style="flex:2">
             <label>ค้นหา</label>
             <div class="search-bar"><span class="search-icon">⌕</span><input id="price-search" placeholder="ค้นหาชื่อรายการ..." oninput="renderPriceDB()"></div>
           </div>
-          <div class="form-group">
+          <div class="form-group" style="flex:1">
             <label>กรองตามหมวด</label>
             <select id="price-cat-filter" onchange="renderPriceDB()">
               <option value="">ทุกหมวด</option>
@@ -600,10 +604,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
     <!-- MASTER TEMPLATE -->
     <div id="page-master" class="page">
       <div class="page-header">
-        <div><div class="page-title">Master Template</div><div class="page-subtitle">กำหนดหมวดงานและรายการย่อยมาตรฐาน</div></div>
-        <div class="header-actions">
-          <button class="btn btn-gold" onclick="addCategoryModal()">+ เพิ่มหมวดงาน</button>
-        </div>
+        <div><div class="page-title">Master Template</div><div class="page-subtitle">กำหนดหมวดงานและรายการย่อย พร้อมราคาเริ่มต้น</div></div>
       </div>
       <div class="content" id="master-content"></div>
     </div>
@@ -1522,14 +1523,16 @@ function onMCatChange(){
   // Sub items จาก category ที่ไม่มีใน price DB
   if(cat){
     const dbNames = dbItems.map(p=>p.name);
-    cat.sub.filter(s=>!dbNames.includes(s)).forEach(s=>{
-      html+=`<div onclick="fillFromSub('${s.replace(/'/g,"\\'")}')" style="
+    cat.sub.filter(s=>!dbNames.includes(subName(s))).forEach(s=>{
+      const nm=subName(s), mat=subMat(s), lab=subLab(s), unit=subUnit(s);
+      const hasPrice=mat>0||lab>0;
+      html+=`<div onclick="fillFromSub(${JSON.stringify(JSON.stringify({name:nm,unit,mat,lab}))})" style="
         background:var(--bg3);border:1px dashed var(--border2);border-radius:var(--r);
         padding:7px 10px;cursor:pointer;transition:all .15s;min-width:140px;flex:1
       " onmouseover="this.style.borderColor='var(--text3)'"
          onmouseout="this.style.borderColor='var(--border2)'">
-        <div style="font-size:12px;font-weight:500;margin-bottom:3px">${s}</div>
-        <div style="font-size:11px;color:var(--text3)">กรอกราคาเอง</div>
+        <div style="font-size:12px;font-weight:500;margin-bottom:3px">${nm}</div>
+        <div style="font-size:11px;color:var(--text3)">${hasPrice?`ของ ${fmt(mat)} + แรง ${fmt(lab)} / ${unit}`:'กรอกราคาเอง'}</div>
       </div>`;
     });
   }
@@ -1558,13 +1561,18 @@ function fillFromPriceDB(priceId){
   document.getElementById('m-qty').focus();
 }
 
-function fillFromSub(name){
-  document.getElementById('m-desc').value = name;
-  document.getElementById('m-mat').value = 0;
-  document.getElementById('m-lab').value = 0;
-  document.getElementById('m-total-price').value = 0;
+function fillFromSub(jsonStr){
+  let s; try{ s=JSON.parse(jsonStr); }catch(e){ s={name:jsonStr,unit:'งาน',mat:0,lab:0}; }
+  document.getElementById('m-desc').value = typeof s==='object'?s.name:s;
+  const mat=typeof s==='object'?(s.mat||0):0;
+  const lab=typeof s==='object'?(s.lab||0):0;
+  document.getElementById('m-mat').value = mat;
+  document.getElementById('m-lab').value = lab;
+  document.getElementById('m-total-price').value = mat+lab;
+  const unitSel=document.getElementById('m-unit');
+  if(s.unit && unitSel) unitSel.value=s.unit;
   calcMTotal();
-  document.getElementById('m-mat').focus();
+  if(mat===0&&lab===0) document.getElementById('m-mat').focus();
 }
 
 function calcMTotal(){
@@ -1854,69 +1862,111 @@ function renderPriceDB(){
   const search=(document.getElementById('price-search')?.value||'').toLowerCase();
   const catF=document.getElementById('price-cat-filter')?.value||'';
   let items=S.priceDB;
-  if(search) items=items.filter(p=>p.name.toLowerCase().includes(search));
-  if(catF) items=items.filter(p=>p.catId===parseInt(catF));
+  if(search) items=items.filter(p=>p.name.toLowerCase().includes(search)||p.unit.toLowerCase().includes(search));
+  if(catF) items=items.filter(p=>String(p.catId)===catF);
   const el=document.getElementById('price-db-list');
   if(!el) return;
-  if(items.length===0){el.innerHTML='<div class="empty-state"><div class="empty-icon">▦</div><div class="empty-text">ไม่พบรายการ</div></div>';return;}
-  // Group by category
-  const cats=S.categories.filter(c=>items.some(x=>x.catId===c.id));
-  el.innerHTML=cats.map(cat=>`
-    <div style="margin-bottom:20px">
-      <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${cat.icon} ${cat.name}</div>
-      <div class="price-db-grid">
-        ${items.filter(x=>x.catId===cat.id).map(p=>`
-          <div class="price-item">
-            <div class="price-item-name">${p.name}</div>
-            <div class="price-item-prices">
-              ค่าของ: <span>${fmt(p.mat)}</span> · ค่าแรง: <span>${fmt(p.lab)}</span>
-            </div>
-            <div class="price-item-unit">/ ${p.unit}</div>
-            <div style="margin-top:8px;display:flex;gap:6px">
-              <button class="btn btn-xs" onclick="editPriceItem('${p.id}')">แก้ไข</button>
-              <button class="btn btn-xs btn-red" onclick="deletePriceItem('${p.id}')">ลบ</button>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
+
   // Update filter dropdown
   const catFilter=document.getElementById('price-cat-filter');
-  if(catFilter && catFilter.options.length<=1){
-    S.categories.forEach(c=>catFilter.innerHTML+=`<option value="${c.id}">${c.name}</option>`);
+  if(catFilter){
+    const cur=catFilter.value;
+    catFilter.innerHTML='<option value="">ทุกหมวด</option>'+S.categories.map(c=>`<option value="${c.id}">${c.icon||''} ${c.name}</option>`).join('');
+    catFilter.value=cur;
   }
+
+  if(items.length===0&&!search&&!catF){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">▦</div><div class="empty-text">ยังไม่มีรายการราคา — เพิ่มจากฟอร์มด้านล่าง</div></div>';
+  } else {
+    const cats=S.categories.filter(c=>items.some(x=>x.catId===c.id));
+    const units=['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'];
+    el.innerHTML=cats.map(cat=>`
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+        <div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:12px;font-weight:500;color:var(--text2)">${cat.icon||''} ${cat.name}</div>
+        <table class="master-table">
+          <thead><tr>
+            <th>ชื่อรายการ</th>
+            <th style="width:90px">หน่วย</th>
+            <th class="right" style="width:130px">ค่าของ/หน่วย (฿)</th>
+            <th class="right" style="width:130px">ค่าแรง/หน่วย (฿)</th>
+            <th class="right" style="width:100px">รวม/หน่วย (฿)</th>
+            <th style="width:80px"></th>
+          </tr></thead>
+          <tbody>
+            ${items.filter(x=>x.catId===cat.id).map(p=>`
+              <tr id="prow-${p.id}">
+                <td><input value="${p.name}" id="pn-${p.id}" style="min-width:180px"></td>
+                <td><select id="pu-${p.id}" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px;width:100%">${units.map(u=>`<option ${p.unit===u?'selected':''}>${u}</option>`).join('')}</select></td>
+                <td><input type="number" value="${p.mat}" id="pm-${p.id}" class="num" style="min-width:90px"></td>
+                <td><input type="number" value="${p.lab}" id="pl-${p.id}" class="num" style="min-width:90px"></td>
+                <td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--accent);padding-right:10px">${fmt(p.mat+p.lab)}</td>
+                <td style="display:flex;gap:4px;padding:6px">
+                  <button class="btn btn-xs btn-green" onclick="savePriceRow('${p.id}')">💾</button>
+                  <button class="btn btn-xs btn-red" onclick="deletePriceItem('${p.id}')">×</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `).join('')}
+  }
+
+  // Add new item form
+  el.innerHTML += `
+    <div class="card">
+      <div class="card-title">+ เพิ่มรายการราคาใหม่</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:end">
+        <div class="form-group" style="margin:0"><label>ชื่อรายการ</label><input id="new-pname" placeholder="ชื่อรายการ"></div>
+        <div class="form-group" style="margin:0"><label>หมวด</label>
+          <select id="new-pcat" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;width:100%">
+            <option value="">-- เลือกหมวด --</option>
+            ${S.categories.map(c=>`<option value="${c.id}">${c.icon||''} ${c.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin:0"><label>หน่วย</label>
+          <select id="new-punit" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;width:100%">
+            ${['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'].map(u=>`<option>${u}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin:0"><label>ค่าของ/หน่วย</label><input type="number" id="new-pmat" value="0" class="num"></div>
+        <div class="form-group" style="margin:0"><label>ค่าแรง/หน่วย</label><input type="number" id="new-plab" value="0" class="num"></div>
+        <button class="btn btn-gold" onclick="addPriceRow()" style="align-self:end">+ เพิ่ม</button>
+      </div>
+    </div>
+  `;
 }
 
-function openPriceModal(){
-  ['pm-name'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('pm-mat').value=0;
-  document.getElementById('pm-lab').value=0;
-  const pm=document.getElementById('pm-cat');
-  pm.innerHTML='<option value="">-- เลือกหมวด --</option>'+S.categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-  openModal('modal-price');
+async function savePriceRow(id){
+  const p=S.priceDB.find(x=>x.id===id);
+  if(!p) return;
+  p.name=document.getElementById(`pn-${id}`).value.trim();
+  p.unit=document.getElementById(`pu-${id}`).value;
+  p.mat=parseFloat(document.getElementById(`pm-${id}`).value)||0;
+  p.lab=parseFloat(document.getElementById(`pl-${id}`).value)||0;
+  try{
+    await api(`/api/price-db/${id}`,{method:'PUT',body:{cat_id:p.catId,name:p.name,unit:p.unit,mat:p.mat,lab:p.lab}});
+    toast('บันทึก "'+p.name+'" แล้ว');
+    renderPriceDB();
+  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
 }
 
-async function confirmAddPrice(){
-  const name=document.getElementById('pm-name').value.trim();
-  const catId=parseInt(document.getElementById('pm-cat').value);
+async function addPriceRow(){
+  const name=document.getElementById('new-pname').value.trim();
+  const catId=parseInt(document.getElementById('new-pcat').value);
   if(!name||!catId){toast('กรุณากรอกชื่อและเลือกหมวด','error');return;}
   const item={
-    id:'p'+Date.now(),catId,name,
-    unit:document.getElementById('pm-unit').value,
-    mat:parseFloat(document.getElementById('pm-mat').value)||0,
-    lab:parseFloat(document.getElementById('pm-lab').value)||0
+    id:'p'+Date.now(), catId, name,
+    unit:document.getElementById('new-punit').value,
+    mat:parseFloat(document.getElementById('new-pmat').value)||0,
+    lab:parseFloat(document.getElementById('new-plab').value)||0
   };
   try{
-    await api('/api/price-db',{
-      method:'POST',
-      body:{id:item.id, cat_id:catId, name:item.name, unit:item.unit, mat:item.mat, lab:item.lab}
-    });
+    await api('/api/price-db',{method:'POST',body:{id:item.id,cat_id:catId,name:item.name,unit:item.unit,mat:item.mat,lab:item.lab}});
     S.priceDB.push(item);
-    closeModal('modal-price');
     renderPriceDB();
-    toast('เพิ่มราคา "'+name+'" แล้ว');
-  }catch(e){ toast('เพิ่มราคาล้มเหลว: '+e.message,'error'); }
+    toast('เพิ่ม "'+name+'" แล้ว');
+  }catch(e){ toast('เพิ่มล้มเหลว: '+e.message,'error'); }
 }
 
 function editPriceItem(id){
@@ -1964,28 +2014,104 @@ async function deletePriceItem(id){
 // ================================================================
 // MASTER TEMPLATE
 // ================================================================
+// sub items format: {name, unit, mat, lab} or legacy string
+function subName(s){ return typeof s==='object'?s.name:s; }
+function subUnit(s){ return typeof s==='object'?(s.unit||'งาน'):'งาน'; }
+function subMat(s){ return typeof s==='object'?(s.mat||0):0; }
+function subLab(s){ return typeof s==='object'?(s.lab||0):0; }
+
 function renderMaster(){
   const el=document.getElementById('master-content');
   if(!el) return;
-  el.innerHTML=S.categories.map((cat,ci)=>`
-    <div class="card">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-        <input value="${cat.icon}" onchange="updateCategoryField(${ci},'icon',this.value)" style="width:40px;text-align:center;font-size:18px">
-        <input value="${cat.name}" onchange="updateCategoryField(${ci},'name',this.value)" style="flex:1;font-weight:500">
+  const units=['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'];
+  el.innerHTML=`
+  <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+    <button class="btn btn-gold" onclick="addCategoryModal()">+ เพิ่มหมวดงาน</button>
+  </div>`+
+  S.categories.map((cat,ci)=>`
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <input value="${cat.icon||'📦'}" id="cat-icon-${ci}" style="width:38px;text-align:center;font-size:18px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:4px">
+        <input value="${cat.name}" id="cat-name-${ci}" style="flex:1;font-size:15px;font-weight:500;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">
+        <button class="btn btn-sm" onclick="saveCategoryHeader(${ci})">บันทึกชื่อ</button>
         <button class="btn btn-sm btn-red" onclick="removeCategory(${ci})">ลบหมวด</button>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">รายการย่อย</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${cat.sub.map((s,si)=>`
-          <div class="tag" style="cursor:default">
-            ${s}
-            <span onclick="removeSub(${ci},${si})" style="cursor:pointer;opacity:.6;margin-left:2px">×</span>
-          </div>
-        `).join('')}
-        <div class="tag" onclick="addSub(${ci})" style="color:var(--accent);border-color:var(--accent)">+ เพิ่ม</div>
+      <table class="master-table">
+        <thead><tr>
+          <th>ชื่อรายการ</th>
+          <th style="width:90px">หน่วย</th>
+          <th class="right" style="width:130px">ค่าของ/หน่วย (฿)</th>
+          <th class="right" style="width:130px">ค่าแรง/หน่วย (฿)</th>
+          <th style="width:36px"></th>
+        </tr></thead>
+        <tbody id="sub-tbody-${ci}">
+          ${cat.sub.map((s,si)=>`
+            <tr>
+              <td><input value="${subName(s)}" id="sub-name-${ci}-${si}" style="min-width:180px"></td>
+              <td><select id="sub-unit-${ci}-${si}" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px;width:100%">
+                ${units.map(u=>`<option ${subUnit(s)===u?'selected':''}>${u}</option>`).join('')}
+              </select></td>
+              <td><input type="number" value="${subMat(s)}" id="sub-mat-${ci}-${si}" class="num" style="min-width:90px"></td>
+              <td><input type="number" value="${subLab(s)}" id="sub-lab-${ci}-${si}" class="num" style="min-width:90px"></td>
+              <td><button class="btn btn-xs btn-red" onclick="removeSub(${ci},${si})">×</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+        <tfoot>
+          <tr class="master-add-row" id="add-row-${ci}">
+            <td><input id="new-sub-name-${ci}" placeholder="ชื่อรายการย่อย"></td>
+            <td><select id="new-sub-unit-${ci}" style="background:var(--bg4);border:1px solid var(--border);border-radius:var(--r);padding:6px 8px;color:var(--text);font-size:12px;width:100%">${units.map(u=>`<option>${u}</option>`).join('')}</select></td>
+            <td><input type="number" id="new-sub-mat-${ci}" value="0" class="num" placeholder="0"></td>
+            <td><input type="number" id="new-sub-lab-${ci}" value="0" class="num" placeholder="0"></td>
+            <td><button class="btn btn-xs btn-green" onclick="addSubRow(${ci})">+</button></td>
+          </tr>
+        </tfoot>
+      </table>
+      <div style="display:flex;justify-content:flex-end;margin-top:10px">
+        <button class="btn btn-gold" onclick="saveCategoryFull(${ci})">💾 บันทึกหมวดนี้</button>
       </div>
     </div>
   `).join('');
+}
+
+function addSubRow(ci){
+  const name=document.getElementById(`new-sub-name-${ci}`).value.trim();
+  if(!name){toast('กรุณาใส่ชื่อรายการ','error');return;}
+  const unit=document.getElementById(`new-sub-unit-${ci}`).value;
+  const mat=parseFloat(document.getElementById(`new-sub-mat-${ci}`).value)||0;
+  const lab=parseFloat(document.getElementById(`new-sub-lab-${ci}`).value)||0;
+  S.categories[ci].sub.push({name,unit,mat,lab});
+  renderMaster();
+}
+
+async function saveCategoryHeader(ci){
+  const cat=S.categories[ci];
+  cat.icon=document.getElementById(`cat-icon-${ci}`).value;
+  cat.name=document.getElementById(`cat-name-${ci}`).value;
+  try{
+    await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
+    toast('บันทึกชื่อหมวดแล้ว');
+    renderCatTags();
+  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
+}
+
+async function saveCategoryFull(ci){
+  const cat=S.categories[ci];
+  cat.icon=document.getElementById(`cat-icon-${ci}`).value;
+  cat.name=document.getElementById(`cat-name-${ci}`).value;
+  // Collect all edited sub rows
+  cat.sub=cat.sub.map((_,si)=>({
+    name: document.getElementById(`sub-name-${ci}-${si}`)?.value||subName(cat.sub[si]),
+    unit: document.getElementById(`sub-unit-${ci}-${si}`)?.value||subUnit(cat.sub[si]),
+    mat: parseFloat(document.getElementById(`sub-mat-${ci}-${si}`)?.value)||0,
+    lab: parseFloat(document.getElementById(`sub-lab-${ci}-${si}`)?.value)||0
+  }));
+  try{
+    await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
+    toast('บันทึกหมวด "'+cat.name+'" เรียบร้อย');
+    renderMaster();
+    renderCatTags();
+  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
 }
 
 async function addCategoryModal(){
@@ -1993,7 +2119,7 @@ async function addCategoryModal(){
   if(!name) return;
   try{
     const cat=await api('/api/categories',{method:'POST',body:{name,icon:'📦',sub:[]}});
-    S.categories.push({id:cat.id,name:cat.name,icon:cat.icon,sub:cat.sub});
+    S.categories.push({id:cat.id,name:cat.name,icon:cat.icon||'📦',sub:[]});
     renderMaster();
     toast('เพิ่มหมวด "'+name+'" แล้ว');
   }catch(e){ toast('เพิ่มหมวดล้มเหลว: '+e.message,'error'); }
@@ -2011,17 +2137,6 @@ async function removeCategory(i){
     renderCatTags();
     renderBoqTable();
   }catch(e){ toast('ลบหมวดล้มเหลว: '+e.message,'error'); }
-}
-
-async function addSub(ci){
-  const s=prompt('ชื่อรายการย่อย:');
-  if(!s) return;
-  S.categories[ci].sub.push(s);
-  const cat=S.categories[ci];
-  try{
-    await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
-    renderMaster();
-  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
 }
 
 async function removeSub(ci,si){
