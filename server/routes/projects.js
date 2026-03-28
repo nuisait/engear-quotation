@@ -2,6 +2,19 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+// Ensure new columns exist
+async function ensureColumns(){
+  const alters = [
+    `ALTER TABLE projects ADD COLUMN IF NOT EXISTS customer_id INT`,
+    `ALTER TABLE projects ADD COLUMN IF NOT EXISTS start_date DATE`,
+    `ALTER TABLE projects ADD COLUMN IF NOT EXISTS end_date DATE`,
+    `ALTER TABLE projects ADD COLUMN IF NOT EXISTS project_status TEXT DEFAULT 'เสนอราคา'`,
+    `ALTER TABLE projects ADD COLUMN IF NOT EXISTS boq_status TEXT DEFAULT 'Draft'`
+  ];
+  for(const sql of alters) await db.query(sql).catch(()=>{});
+}
+ensureColumns().catch(e => console.error('projects migrate error:', e.message));
+
 // GET /api/projects?page=1&limit=50&search=
 router.get('/', async (req, res) => {
   try {
@@ -49,13 +62,14 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/projects
 router.post('/', async (req, res) => {
-  const { name, quo_no, client, company, phone, email, location } = req.body;
+  const { name, quo_no, client, company, phone, email, location, customer_id, start_date, end_date, project_status, boq_status } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'ชื่อโครงการต้องระบุ' });
   try {
     const { rows } = await db.query(
-      `INSERT INTO projects (name, quo_no, client, company, phone, email, location)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [name.trim(), quo_no || null, client || null, company || null, phone || null, email || null, location || null]
+      `INSERT INTO projects (name, quo_no, client, company, phone, email, location, customer_id, start_date, end_date, project_status, boq_status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [name.trim(), quo_no||null, client||null, company||null, phone||null, email||null, location||null,
+       customer_id||null, start_date||null, end_date||null, project_status||'เสนอราคา', boq_status||'Draft']
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -65,13 +79,17 @@ router.post('/', async (req, res) => {
 
 // PUT /api/projects/:id
 router.put('/:id', async (req, res) => {
-  const { name, quo_no, client, company, phone, email, location, quotation_status } = req.body;
+  const { name, quo_no, client, company, phone, email, location, quotation_status, customer_id, start_date, end_date, project_status, boq_status } = req.body;
   if (!name || !name.trim()) return res.status(400).json({ error: 'ชื่อโครงการต้องระบุ' });
   try {
     const { rows } = await db.query(
-      `UPDATE projects SET name=$1, quo_no=$2, client=$3, company=$4, phone=$5, email=$6, location=$7, quotation_status=COALESCE($8, quotation_status)
-       WHERE id=$9 RETURNING *`,
-      [name.trim(), quo_no || null, client || null, company || null, phone || null, email || null, location || null, quotation_status || null, req.params.id]
+      `UPDATE projects SET name=$1, quo_no=$2, client=$3, company=$4, phone=$5, email=$6, location=$7,
+       quotation_status=COALESCE($8, quotation_status), customer_id=$9, start_date=$10, end_date=$11,
+       project_status=COALESCE($12, project_status), boq_status=COALESCE($13, boq_status)
+       WHERE id=$14 RETURNING *`,
+      [name.trim(), quo_no||null, client||null, company||null, phone||null, email||null, location||null,
+       quotation_status||null, customer_id||null, start_date||null, end_date||null,
+       project_status||null, boq_status||null, req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(rows[0]);
