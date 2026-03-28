@@ -587,28 +587,6 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       </div>
     </div>
 
-    <!-- PRICE DB -->
-    <div id="page-pricedb" class="page">
-      <div class="page-header">
-        <div><div class="page-title">Unit Price Database</div><div class="page-subtitle">ราคามาตรฐานค่าของและค่าแรงต่อหน่วย</div></div>
-      </div>
-      <div class="content">
-        <div style="display:flex;gap:12px;margin-bottom:16px;align-items:flex-end">
-          <div class="form-group" style="flex:2">
-            <label>ค้นหา</label>
-            <div class="search-bar"><span class="search-icon">⌕</span><input id="price-search" placeholder="ค้นหาชื่อรายการ..." oninput="renderPriceDB()"></div>
-          </div>
-          <div class="form-group" style="flex:1">
-            <label>กรองตามหมวด</label>
-            <select id="price-cat-filter" onchange="renderPriceDB()">
-              <option value="">ทุกหมวด</option>
-            </select>
-          </div>
-        </div>
-        <div id="price-db-list"></div>
-      </div>
-    </div>
-
     <!-- USERS -->
     <div id="page-users" class="page">
       <div class="page-header">
@@ -1240,7 +1218,6 @@ function nav(page){
   if(page==='dashboard') renderDashboard();
   if(page==='projects') renderProjects();
   if(page==='customers') renderCustomerList();
-  if(page==='pricedb') renderPriceDB();
   if(page==='master') renderMaster();
   if(page==='users') renderUsers();
 }
@@ -2119,169 +2096,6 @@ function updateRevFilterSelect(){
 // ================================================================
 // PRICE DB
 // ================================================================
-function priceRowHtml(p, units){
-  var id=p.id;
-  var opts='';
-  for(var i=0;i<units.length;i++){
-    opts+='<option'+(p.unit===units[i]?' selected':'')+'>'+units[i]+'</option>';
-  }
-  return '<tr id="prow-'+id+'">'
-    +'<td><input value="'+p.name.replace(/"/g,'&quot;')+'" id="pn-'+id+'" style="min-width:180px"></td>'
-    +'<td><select id="pu-'+id+'" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px;width:100%">'+opts+'</select></td>'
-    +'<td><input type="number" value="'+p.mat+'" id="pm-'+id+'" class="num" style="min-width:90px"></td>'
-    +'<td><input type="number" value="'+p.lab+'" id="pl-'+id+'" class="num" style="min-width:90px"></td>'
-    +'<td style="text-align:right;font-family:var(--mono);font-size:12px;color:var(--accent);padding-right:10px">'+fmt(p.mat+p.lab)+'</td>'
-    +'<td style="display:flex;gap:4px;padding:6px">'
-    +'<button class="btn btn-xs btn-green" data-rid="'+id+'" onclick="savePriceRow(this.dataset.rid)">&#128190;</button>'
-    +'<button class="btn btn-xs btn-red" data-rid="'+id+'" onclick="deletePriceItem(this.dataset.rid)">&#215;</button>'
-    +'</td></tr>';
-}
-
-
-function renderPriceDB(){
-  const search=(document.getElementById('price-search')?.value||'').toLowerCase();
-  const catF=document.getElementById('price-cat-filter')?.value||'';
-  let items=S.priceDB;
-  if(search) items=items.filter(p=>p.name.toLowerCase().includes(search)||p.unit.toLowerCase().includes(search));
-  if(catF) items=items.filter(p=>String(p.catId)===catF);
-  const el=document.getElementById('price-db-list');
-  if(!el) return;
-
-  // Update filter dropdown
-  const catFilter=document.getElementById('price-cat-filter');
-  if(catFilter){
-    const cur=catFilter.value;
-    catFilter.innerHTML='<option value="">ทุกหมวด</option>'+S.categories.map(c=>`<option value="${c.id}">${c.icon||''} ${c.name}</option>`).join('');
-    catFilter.value=cur;
-  }
-
-  const units=['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'];
-  var html='';
-  if(items.length===0&&!search&&!catF){
-    html='<div class="empty-state"><div class="empty-icon">&#9638;</div><div class="empty-text">ยังไม่มีรายการราคา — เพิ่มจากฟอร์มด้านล่าง</div></div>';
-  } else {
-    const cats=S.categories.filter(c=>items.some(x=>x.catId===c.id));
-    for(var ci=0;ci<cats.length;ci++){
-      const cat=cats[ci];
-      const catItems=items.filter(x=>x.catId===cat.id);
-      var rows='';
-      for(var ri=0;ri<catItems.length;ri++){
-        rows+=priceRowHtml(catItems[ri],units);
-      }
-      html+='<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">'
-        +'<div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:12px;font-weight:500;color:var(--text2)">'+(cat.icon||'')+' '+cat.name+'</div>'
-        +'<table class="master-table"><thead><tr>'
-        +'<th>ชื่อรายการ</th>'
-        +'<th style="width:90px">หน่วย</th>'
-        +'<th class="right" style="width:130px">ค่าของ/หน่วย (฿)</th>'
-        +'<th class="right" style="width:130px">ค่าแรง/หน่วย (฿)</th>'
-        +'<th class="right" style="width:100px">รวม/หน่วย (฿)</th>'
-        +'<th style="width:80px"></th>'
-        +'</tr></thead><tbody>'+rows+'</tbody></table></div>';
-    }
-  }
-  el.innerHTML=html;
-
-  // Add new item form
-  const catOpts=S.categories.map(c=>`<option value="${c.id}">${c.icon||''} ${c.name}</option>`).join('');
-  const unitOpts=units.map(u=>`<option>${u}</option>`).join('');
-  el.innerHTML += `
-    <div class="card">
-      <div class="card-title">+ เพิ่มรายการราคาใหม่</div>
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr auto;gap:8px;align-items:end">
-        <div class="form-group" style="margin:0"><label>ชื่อรายการ</label><input id="new-pname" placeholder="ชื่อรายการ"></div>
-        <div class="form-group" style="margin:0"><label>หมวด</label>
-          <select id="new-pcat" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;width:100%">
-            <option value="">-- เลือกหมวด --</option>${catOpts}
-          </select>
-        </div>
-        <div class="form-group" style="margin:0"><label>หน่วย</label>
-          <select id="new-punit" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;width:100%">
-            ${unitOpts}
-          </select>
-        </div>
-        <div class="form-group" style="margin:0"><label>ค่าของ/หน่วย</label><input type="number" id="new-pmat" value="0" class="num"></div>
-        <div class="form-group" style="margin:0"><label>ค่าแรง/หน่วย</label><input type="number" id="new-plab" value="0" class="num"></div>
-        <button class="btn btn-gold" onclick="addPriceRow()" style="align-self:end">+ เพิ่ม</button>
-      </div>
-    </div>
-  `;
-}
-
-async function savePriceRow(id){
-  const p=S.priceDB.find(x=>x.id===id);
-  if(!p) return;
-  p.name=document.getElementById(`pn-${id}`).value.trim();
-  p.unit=document.getElementById(`pu-${id}`).value;
-  p.mat=parseFloat(document.getElementById(`pm-${id}`).value)||0;
-  p.lab=parseFloat(document.getElementById(`pl-${id}`).value)||0;
-  try{
-    await api(`/api/price-db/${id}`,{method:'PUT',body:{cat_id:p.catId,name:p.name,unit:p.unit,mat:p.mat,lab:p.lab}});
-    toast('บันทึก "'+p.name+'" แล้ว');
-    renderPriceDB();
-  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
-}
-
-async function addPriceRow(){
-  const name=document.getElementById('new-pname').value.trim();
-  const catId=parseInt(document.getElementById('new-pcat').value);
-  if(!name||!catId){toast('กรุณากรอกชื่อและเลือกหมวด','error');return;}
-  const item={
-    id:'p'+Date.now(), catId, name,
-    unit:document.getElementById('new-punit').value,
-    mat:parseFloat(document.getElementById('new-pmat').value)||0,
-    lab:parseFloat(document.getElementById('new-plab').value)||0
-  };
-  try{
-    await api('/api/price-db',{method:'POST',body:{id:item.id,cat_id:catId,name:item.name,unit:item.unit,mat:item.mat,lab:item.lab}});
-    S.priceDB.push(item);
-    renderPriceDB();
-    toast('เพิ่ม "'+name+'" แล้ว');
-  }catch(e){ toast('เพิ่มล้มเหลว: '+e.message,'error'); }
-}
-
-function editPriceItem(id){
-  const p=S.priceDB.find(x=>x.id===id);
-  if(!p) return;
-  document.getElementById('pm-name').value=p.name;
-  document.getElementById('pm-mat').value=p.mat;
-  document.getElementById('pm-lab').value=p.lab;
-  document.getElementById('pm-unit').value=p.unit;
-  const pm=document.getElementById('pm-cat');
-  pm.innerHTML='<option value="">-- เลือกหมวด --</option>'+S.categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-  pm.value=p.catId;
-  const btn=document.querySelector('#modal-price .btn-gold');
-  btn.onclick=async ()=>{
-    p.name=document.getElementById('pm-name').value;
-    p.catId=parseInt(document.getElementById('pm-cat').value);
-    p.unit=document.getElementById('pm-unit').value;
-    p.mat=parseFloat(document.getElementById('pm-mat').value)||0;
-    p.lab=parseFloat(document.getElementById('pm-lab').value)||0;
-    try{
-      await api(`/api/price-db/${p.id}`,{
-        method:'PUT',
-        body:{cat_id:p.catId, name:p.name, unit:p.unit, mat:p.mat, lab:p.lab}
-      });
-      closeModal('modal-price');
-      renderPriceDB();
-      toast('แก้ไขราคาแล้ว');
-    }catch(e){ toast('แก้ไขล้มเหลว: '+e.message,'error'); }
-    btn.onclick=confirmAddPrice;
-  };
-  openModal('modal-price');
-}
-
-async function deletePriceItem(id){
-  const p=S.priceDB.find(x=>x.id===id);
-  if(!p) return;
-  try{
-    await api(`/api/price-db/${id}`,{method:'DELETE'});
-    S.priceDB=S.priceDB.filter(x=>x.id!==id);
-    renderPriceDB();
-    toast('ลบ "'+p.name+'" แล้ว');
-  }catch(e){ toast('ลบล้มเหลว: '+e.message,'error'); }
-}
-
 // ================================================================
 // MASTER TEMPLATE
 // ================================================================
