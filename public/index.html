@@ -1225,6 +1225,9 @@ function nav(page){
 async function openProject(id, tab){
   S.activeProjectId = id;
   await loadLineItemsForProject(id);
+  // Auto-select categories that have items; if none, reset selection
+  const usedCatIds = [...new Set(S.lineItems.map(x=>x.catId))];
+  S.selectedCats = usedCatIds;
   await loadExtrasForProject(id);
   saveUiState();
   // Update project detail header
