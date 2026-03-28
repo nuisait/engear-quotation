@@ -108,13 +108,15 @@ input.num { text-align: right; font-family: var(--mono); font-size: 12px; }
 .tag:hover { border-color: var(--accent); color: var(--text); }
 .tag.on { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
 
-/* PROJECT CARDS GRID */
-.proj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 20px; }
-.proj-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r2); padding: 18px; cursor: pointer; transition: all .2s; position: relative; overflow: visible; }
-.proj-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--border); transition: background .2s; border-radius: var(--r2) var(--r2) 0 0; }
-.proj-card:hover { border-color: var(--border2); transform: translateY(-1px); }
-.proj-card.active { border-color: var(--accent); }
-.proj-card.active::before { background: var(--accent); }
+/* PROJECT LIST TABLE */
+.proj-table { width: 100%; border-collapse: collapse; }
+.proj-table th { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; padding: 8px 12px; border-bottom: 1px solid var(--border); text-align: left; }
+.proj-table td { padding: 12px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 13px; }
+.proj-table tr:hover td { background: var(--bg3); }
+.proj-table .proj-name-cell { font-weight: 500; color: var(--text); cursor: pointer; }
+.proj-table .proj-name-cell:hover { color: var(--accent); }
+.proj-table .proj-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.proj-status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 5px; }
 .proj-name { font-size: 14px; font-weight: 500; margin-bottom: 6px; padding-right: 28px; }
 .proj-meta { font-size: 12px; color: var(--text2); line-height: 1.8; }
 .proj-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
@@ -353,7 +355,6 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
       <div class="nav-section">ข้อมูล</div>
       <div class="nav-item" onclick="nav('customers')"><span class="nav-icon">◑</span> ลูกค้า</div>
-      <div class="nav-item" onclick="nav('pricedb')"><span class="nav-icon">▦</span> Unit Price Database</div>
       <div class="nav-item" onclick="nav('master')"><span class="nav-icon">◧</span> Price Master</div>
     </nav>
     <div class="sidebar-footer">
@@ -404,7 +405,10 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
         </div>
       </div>
       <div class="content">
-        <div class="proj-grid" id="project-grid"></div>
+        <div style="margin-bottom:12px">
+          <div class="search-bar"><span class="search-icon">⌕</span><input id="proj-search" placeholder="ค้นหาชื่อโครงการ..." oninput="renderProjects()"></div>
+        </div>
+        <div id="project-list"></div>
       </div>
     </div>
 
@@ -786,48 +790,36 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
   </div>
 </div>
 
-<!-- ADD PROJECT MODAL -->
+<!-- ADD / EDIT PROJECT MODAL -->
 <div id="modal-project" class="overlay">
-  <div class="modal" style="width:620px">
+  <div class="modal" style="width:520px">
     <div class="modal-title" id="modal-project-title">สร้างโครงการใหม่ <span class="close" onclick="closeModal('modal-project')">×</span></div>
-    <!-- Customer selector -->
+    <div class="form-row cols2" style="margin-bottom:12px">
+      <div class="form-group" style="flex:2"><label>ชื่อโครงการ <span style="color:var(--red)">*</span></label><input id="np-name" placeholder="ชื่อโครงการ"></div>
+      <div class="form-group" style="flex:1"><label>เลขที่ BOQ</label><input id="np-quo" placeholder="QUO-EG-001" readonly style="opacity:.7;cursor:default"></div>
+    </div>
     <div class="form-group" style="margin-bottom:12px">
-      <label>เลือกลูกค้า (จาก Master)</label>
+      <label>ลูกค้า</label>
       <select id="np-customer" onchange="onNpCustomerChange()" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px">
-        <option value="">-- เลือกลูกค้า หรือกรอกเองด้านล่าง --</option>
+        <option value="">-- เลือกลูกค้า --</option>
       </select>
     </div>
-    <div class="form-row cols2" style="margin-bottom:12px">
-      <div class="form-group"><label>ชื่อโครงการ <span style="color:var(--red)">*</span></label><input id="np-name" placeholder="ชื่อโครงการ"></div>
-      <div class="form-group"><label>เลขที่ Quotation</label><input id="np-quo" placeholder="QUO-EG-25XXX"></div>
-    </div>
-    <div class="form-row cols2" style="margin-bottom:12px">
-      <div class="form-group"><label>ลูกค้า / ผู้ติดต่อ</label><input id="np-client" placeholder="ชื่อลูกค้า"></div>
-      <div class="form-group"><label>บริษัทลูกค้า</label><input id="np-company" placeholder="ชื่อบริษัท"></div>
-    </div>
-    <div class="form-row cols2" style="margin-bottom:12px">
-      <div class="form-group"><label>โทรศัพท์</label><input id="np-phone" placeholder="08X-XXX-XXXX"></div>
-      <div class="form-group"><label>Email</label><input id="np-email" placeholder="email@company.com"></div>
-    </div>
-    <div class="form-row cols2" style="margin-bottom:12px">
-      <div class="form-group"><label>สถานที่</label><input id="np-location" placeholder="ที่ตั้งโครงการ"></div>
-      <div class="form-group"><label>สถานะโครงการ</label>
-        <select id="np-project-status" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px">
-          <option value="เสนอราคา">เสนอราคา</option>
-          <option value="ยื่นราคา">ยื่นราคา</option>
-          <option value="รอผล">รอผล</option>
-          <option value="กำลังทำงาน">กำลังทำงาน</option>
-          <option value="จบงาน">จบงาน</option>
-        </select>
+    <div id="np-contact-fields" style="display:none">
+      <div class="form-group" style="margin-bottom:12px"><label>ผู้ติดต่อ</label><input id="np-client" placeholder="ชื่อผู้ติดต่อ"></div>
+      <div class="form-row cols2" style="margin-bottom:12px">
+        <div class="form-group"><label>โทรศัพท์</label><input id="np-phone" placeholder="08X-XXX-XXXX"></div>
+        <div class="form-group"><label>Email</label><input id="np-email" placeholder="email@company.com"></div>
       </div>
     </div>
-    <div class="form-row cols2" style="margin-bottom:16px">
-      <div class="form-group"><label>วันที่คาดว่าจะเริ่มงาน</label><input type="date" id="np-start-date" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;width:100%"></div>
-      <div class="form-group"><label>วันที่คาดว่าจะจบงาน</label><input type="date" id="np-end-date" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;width:100%"></div>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
+    <!-- Hidden fields kept for edit compatibility -->
+    <input type="hidden" id="np-company">
+    <input type="hidden" id="np-location">
+    <input type="hidden" id="np-start-date">
+    <input type="hidden" id="np-end-date">
+    <input type="hidden" id="np-project-status" value="เสนอราคา">
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
       <button class="btn" onclick="closeModal('modal-project')">ยกเลิก</button>
-      <button class="btn btn-gold" id="np-confirm-btn" onclick="confirmNewProject()">สร้างโครงการ</button>
+      <button class="btn btn-gold" id="np-confirm-btn" onclick="confirmNewProject()">บันทึก</button>
     </div>
   </div>
 </div>
@@ -1243,7 +1235,7 @@ function nav(page){
   const el = document.getElementById('page-'+page);
   if (!el) return;
   el.classList.add('active');
-  const map = {dashboard:0,projects:1,'project-detail':1,customers:2,pricedb:3,master:4};
+  const map = {dashboard:0,projects:1,'project-detail':1,customers:2,master:3};
   document.querySelectorAll('.nav-item')[map[page]]?.classList.add('active');
   if(page==='dashboard') renderDashboard();
   if(page==='projects') renderProjects();
@@ -1383,46 +1375,63 @@ function renderDashboard(){
 // PROJECTS
 // ================================================================
 function renderProjects(){
-  document.getElementById('proj-count-header').textContent = S.projects.length+' โครงการ';
-  const grid = document.getElementById('project-grid');
-  grid.innerHTML = S.projects.map(p=>{
-    const revs = S.revisions.filter(r=>r.projId===p.id);
+  const search = (document.getElementById('proj-search')||{value:''}).value.toLowerCase();
+  const list = document.getElementById('project-list');
+  const filtered = S.projects.filter(p=>{
+    if(!search) return true;
+    return (p.name||'').toLowerCase().includes(search) ||
+           (p.company||'').toLowerCase().includes(search) ||
+           (p.client||'').toLowerCase().includes(search) ||
+           (p.quoNo||'').toLowerCase().includes(search);
+  });
+  document.getElementById('proj-count-header').textContent = filtered.length + (search?' / '+S.projects.length:'') + ' โครงการ';
+
+  const statusColor = {'เสนอราคา':'#6b7280','ยื่นราคา':'#3b82f6','รอผล':'#f59e0b','กำลังทำงาน':'#10b981','จบงาน':'#8b5cf6'};
+
+  let html = '<table class="proj-table"><thead><tr>';
+  html += '<th>ชื่อโครงการ</th><th>ลูกค้า / บริษัท</th><th>เลข BOQ</th><th>มูลค่างาน</th><th style="text-align:right">จัดการ</th>';
+  html += '</tr></thead><tbody>';
+
+  filtered.forEach(function(p){
+    const revs = S.revisions.filter(function(r){ return r.projId===p.id; });
     const latest = revs[revs.length-1];
     const hasBoq = revs.length > 0;
-    return `
-    <div class="proj-card ${S.activeProjectId===p.id?'active':''}" onclick="setActiveProject(${p.id})">
-      <button class="card-menu-btn" onclick="event.stopPropagation();toggleCardMenu(${p.id})" title="ตัวเลือก">···</button>
-      <div id="card-menu-${p.id}" class="card-dropdown">
-        <div class="card-dropdown-item" onclick="event.stopPropagation();closeAllCardMenus();editProject(${p.id})">✏️ แก้ไขข้อมูลโครงการ</div>
-        <div class="card-dropdown-item" onclick="event.stopPropagation();closeAllCardMenus();duplicateProject(${p.id})">⧉ คัดลอกโครงการ</div>
-        <div class="card-dropdown-item danger" onclick="event.stopPropagation();closeAllCardMenus();deleteProject(${p.id})">✕ ลบโครงการ</div>
-      </div>
-      <div class="proj-name">${p.name}</div>
-      <div style="margin-bottom:6px">
-        <span class="badge" style="background:var(--bg3);color:var(--text2);border:1px solid var(--border);font-size:10px">${p.project_status||'เสนอราคา'}</span>
-        ${p.start_date?`<span style="font-size:10px;color:var(--text3);margin-left:6px">เริ่ม ${p.start_date}</span>`:''}
-      </div>
-      <div class="proj-meta">
-        ${p.client||'—'}<br>
-        ${p.company||''}<br>
-        ${p.location||'—'}
-      </div>
-      <div class="proj-footer">
-        <span class="badge badge-gold">${p.quoNo||'—'}</span>
-        ${latest?`<span class="proj-total">${fmt(latest.total)} ฿</span>`:'<span style="font-size:11px;color:var(--text3)">ยังไม่มีราคา</span>'}
-      </div>
-      <div style="margin-top:12px">
-        <button class="btn btn-sm ${hasBoq?'':'btn-gold'}" style="width:100%;justify-content:center"
-          onclick="event.stopPropagation();goBoqForProject(${p.id})">
-          ${hasBoq?'&#9998; แก้ไข BOQ':'&#9654; เปิด BOQ'}
-        </button>
-      </div>
-    </div>`;
-  }).join('');
-  grid.innerHTML += `<div class="proj-card new-proj-card" onclick="openNewProjectModal()"><div class="new-proj-icon">＋</div><div style="font-size:13px">เพิ่มโครงการใหม่</div></div>`;
+    const clientDisplay = p.company ? p.company : (p.client||'—');
+    const subDisplay = p.company && p.client ? p.client : '';
+    const sColor = statusColor[p.project_status] || '#6b7280';
+    const totalHtml = latest ? ('<strong>'+fmt(latest.total)+'</strong> ฿') : '<span style="color:var(--text3)">—</span>';
+    const boqHtml = p.quoNo ? ('<span class="badge badge-gold">'+p.quoNo+'</span>') : '<span style="color:var(--text3)">—</span>';
+
+    html += '<tr>';
+    html += '<td>';
+    html += '<div class="proj-name-cell" onclick="goBoqForProject('+p.id+')">' + p.name + '</div>';
+    html += '<div class="proj-sub"><span class="proj-status-dot" style="background:'+sColor+'"></span>' + (p.project_status||'เสนอราคา') + (p.start_date?' · เริ่ม '+p.start_date:'') + '</div>';
+    html += '</td>';
+    html += '<td>';
+    html += '<div>'+clientDisplay+'</div>';
+    if(subDisplay) html += '<div class="proj-sub">'+subDisplay+'</div>';
+    html += '</td>';
+    html += '<td>'+boqHtml+'</td>';
+    html += '<td>'+totalHtml+'</td>';
+    html += '<td style="text-align:right;white-space:nowrap">';
+    if(!hasBoq){
+      html += '<button class="btn btn-sm btn-gold" onclick="goBoqForProject('+p.id+')">+ สร้าง BOQ</button> ';
+    } else {
+      html += '<button class="btn btn-sm" onclick="goBoqForProject('+p.id+')">✎ แก้ไข BOQ</button> ';
+    }
+    html += '<button class="btn btn-sm" onclick="editProject('+p.id+')" title="แก้ไขข้อมูลโครงการ">⚙</button> ';
+    html += '<button class="btn btn-sm" style="color:var(--red)" onclick="deleteProject('+p.id+')" title="ลบโครงการ">✕</button>';
+    html += '</td>';
+    html += '</tr>';
+  });
+
+  if(filtered.length===0){
+    html += '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">'+(search?'ไม่พบโครงการที่ค้นหา':'ยังไม่มีโครงการ กด "+ เพิ่มโครงการ" เพื่อเริ่มต้น')+'</td></tr>';
+  }
+
+  html += '</tbody></table>';
+  list.innerHTML = html;
   updateRevFilterSelect();
-  // Close dropdown when clicking outside
-  document.addEventListener('click', closeAllCardMenus, { once: true });
 }
 
 function toggleCardMenu(id){
@@ -1453,18 +1462,21 @@ async function goBoqForProject(id){
 }
 
 function openNewProjectModal(){
-  ['np-name','np-quo','np-client','np-company','np-phone','np-email','np-location'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('np-start-date').value='';
-  document.getElementById('np-end-date').value='';
-  document.getElementById('np-project-status').value='เสนอราคา';
+  ['np-name','np-client','np-company','np-phone','np-email','np-location'].forEach(function(id){ const el=document.getElementById(id); if(el) el.value=''; });
+  const startEl=document.getElementById('np-start-date'); if(startEl) startEl.value='';
+  const endEl=document.getElementById('np-end-date'); if(endEl) endEl.value='';
+  const psEl=document.getElementById('np-project-status'); if(psEl) psEl.value='เสนอราคา';
   document.getElementById('np-customer').value='';
+  const cf=document.getElementById('np-contact-fields'); if(cf) cf.style.display='none';
   const next = String(S.projects.length+1).padStart(3,'0');
-  document.getElementById('np-quo').value = 'QUO-EG-25'+next;
+  const yr = String(new Date().getFullYear()).slice(-2);
+  document.getElementById('np-quo').value = 'QUO-EG-'+yr+next;
   document.getElementById('modal-project-title').innerHTML='สร้างโครงการใหม่ <span class="close" onclick="closeModal(\'modal-project\')">×</span>';
-  document.getElementById('np-confirm-btn').textContent='สร้างโครงการ';
+  document.getElementById('np-confirm-btn').textContent='บันทึก';
   document.getElementById('np-confirm-btn').onclick=confirmNewProject;
   populateNpCustomerSelect();
   openModal('modal-project');
+  setTimeout(function(){ document.getElementById('np-name').focus(); }, 150);
 }
 
 function populateNpCustomerSelect(){
@@ -1483,14 +1495,17 @@ function populateNpCustomerSelect(){
 
 function onNpCustomerChange(){
   const id=parseInt(document.getElementById('np-customer').value);
-  if(!id) return;
+  const contactFields=document.getElementById('np-contact-fields');
+  if(!id){ if(contactFields) contactFields.style.display='none'; return; }
   const c=S.customers.find(x=>x.id===id);
   if(!c) return;
-  const name=c.type==='company'?(c.company||(c.first_name+' '+c.last_name).trim()):((c.first_name+' '+c.last_name).trim());
-  document.getElementById('np-client').value=name;
-  document.getElementById('np-company').value=c.company||'';
+  const contactName=c.type==='company'?(c.contact_name||''):((c.first_name+' '+c.last_name).trim());
+  const companyName=c.type==='company'?(c.company||''):((c.first_name+' '+c.last_name).trim());
+  document.getElementById('np-client').value=contactName;
+  document.getElementById('np-company').value=companyName;
   document.getElementById('np-phone').value=c.phone1||'';
   document.getElementById('np-email').value=c.email||'';
+  if(contactFields) contactFields.style.display='block';
 }
 
 async function confirmNewProject(){
@@ -1547,10 +1562,12 @@ function editProject(id){
   document.getElementById('np-company').value = p.company||'';
   document.getElementById('np-phone').value = p.phone||'';
   document.getElementById('np-email').value = p.email||'';
-  document.getElementById('np-location').value = p.location||'';
-  document.getElementById('np-start-date').value = p.start_date||'';
-  document.getElementById('np-end-date').value = p.end_date||'';
-  document.getElementById('np-project-status').value = p.project_status||'เสนอราคา';
+  const locEl=document.getElementById('np-location'); if(locEl) locEl.value=p.location||'';
+  const sdEl=document.getElementById('np-start-date'); if(sdEl) sdEl.value=p.start_date||'';
+  const edEl=document.getElementById('np-end-date'); if(edEl) edEl.value=p.end_date||'';
+  const psEl=document.getElementById('np-project-status'); if(psEl) psEl.value=p.project_status||'เสนอราคา';
+  const cf=document.getElementById('np-contact-fields');
+  if(cf) cf.style.display=(p.client||p.phone||p.email)?'block':'none';
   document.getElementById('modal-project-title').innerHTML='แก้ไขโครงการ <span class="close" onclick="closeModal(\'modal-project\')">×</span>';
   const btn = document.getElementById('np-confirm-btn');
   btn.textContent='บันทึก';
