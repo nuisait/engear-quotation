@@ -352,8 +352,9 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="nav-item" onclick="nav('projects')"><span class="nav-icon">◫</span> โครงการ</div>
 
       <div class="nav-section">ข้อมูล</div>
+      <div class="nav-item" onclick="nav('customers')"><span class="nav-icon">◑</span> ลูกค้า</div>
       <div class="nav-item" onclick="nav('pricedb')"><span class="nav-icon">▦</span> Unit Price Database</div>
-      <div class="nav-item" onclick="nav('master')"><span class="nav-icon">◧</span> Master Template</div>
+      <div class="nav-item" onclick="nav('master')"><span class="nav-icon">◧</span> Price Master</div>
     </nav>
     <div class="sidebar-footer">
       <div id="user-pill-wrap"></div>
@@ -604,9 +605,99 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
     <!-- MASTER TEMPLATE -->
     <div id="page-master" class="page">
       <div class="page-header">
-        <div><div class="page-title">Master Template</div><div class="page-subtitle">กำหนดหมวดงานและรายการย่อย พร้อมราคาเริ่มต้น</div></div>
+        <div><div class="page-title">Price Master</div><div class="page-subtitle">กำหนดหมวดงานและรายการย่อย พร้อมราคาและ variance</div></div>
       </div>
       <div class="content" id="master-content"></div>
+    </div>
+
+    <!-- CUSTOMERS -->
+    <div id="page-customers" class="page">
+      <div class="page-header">
+        <div><div class="page-title">ลูกค้า</div><div class="page-subtitle">รายชื่อลูกค้าทั้งหมด</div></div>
+        <div class="header-actions">
+          <button class="btn btn-gold" onclick="newCustomer()">+ เพิ่มลูกค้า</button>
+        </div>
+      </div>
+      <div class="content">
+        <div style="display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start">
+          <!-- LIST -->
+          <div id="customer-list-panel">
+            <div class="card" style="padding:0;overflow:hidden">
+              <div style="padding:10px 12px;background:var(--bg3);border-bottom:1px solid var(--border)">
+                <input id="cust-search" placeholder="ค้นหาชื่อ/เบอร์..." style="width:100%;box-sizing:border-box" oninput="renderCustomerList()">
+              </div>
+              <div id="customer-list" style="max-height:70vh;overflow-y:auto"></div>
+            </div>
+          </div>
+          <!-- DETAIL -->
+          <div id="customer-detail-panel">
+            <div class="card" id="customer-form-card" style="display:none">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                <div class="card-title" style="margin:0" id="cust-form-title">เพิ่มลูกค้าใหม่</div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-gold" onclick="saveCustomer()">💾 บันทึก</button>
+                  <button class="btn btn-sm btn-red" onclick="deleteCustomer()" id="cust-delete-btn" style="display:none">ลบ</button>
+                  <button class="btn btn-sm" onclick="closeCustomerForm()">ยกเลิก</button>
+                </div>
+              </div>
+              <input type="hidden" id="cust-id">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <div class="form-group" style="grid-column:1/-1">
+                  <label>ประเภทลูกค้า</label>
+                  <div style="display:flex;gap:16px;margin-top:4px">
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                      <input type="radio" name="cust-type" value="individual" onchange="onCustTypeChange()" checked> บุคคลธรรมดา
+                    </label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                      <input type="radio" name="cust-type" value="company" onchange="onCustTypeChange()"> นิติบุคคล
+                    </label>
+                  </div>
+                </div>
+                <div class="form-group" id="cust-firstname-group">
+                  <label id="cust-firstname-label">ชื่อ</label>
+                  <input id="cust-firstname" placeholder="ชื่อ">
+                </div>
+                <div class="form-group" id="cust-lastname-group">
+                  <label>นามสกุล</label>
+                  <input id="cust-lastname" placeholder="นามสกุล">
+                </div>
+                <div class="form-group" style="grid-column:1/-1" id="cust-company-group" style="display:none">
+                  <label>ชื่อบริษัท/นิติบุคคล</label>
+                  <input id="cust-company" placeholder="ชื่อบริษัท">
+                </div>
+                <div class="form-group">
+                  <label>ผู้ติดต่อ</label>
+                  <input id="cust-contact" placeholder="ชื่อผู้ติดต่อ">
+                </div>
+                <div class="form-group">
+                  <label>เบอร์โทร 1</label>
+                  <input id="cust-phone1" placeholder="0XX-XXX-XXXX">
+                </div>
+                <div class="form-group">
+                  <label>เบอร์โทร 2</label>
+                  <input id="cust-phone2" placeholder="0XX-XXX-XXXX">
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <label>ที่อยู่ออกบิล</label>
+                  <textarea id="cust-billing" rows="3" placeholder="ที่อยู่สำหรับออกบิล/ใบกำกับภาษี" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;resize:vertical" oninput="onBillingInput()"></textarea>
+                </div>
+                <div class="form-group" style="grid-column:1/-1">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                    <label style="margin:0">ที่อยู่สถานที่ทำงาน</label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text3)">
+                      <input type="checkbox" id="cust-same-addr" onchange="onSameAddrChange()"> เหมือนที่อยู่ออกบิล
+                    </label>
+                  </div>
+                  <textarea id="cust-work" rows="3" placeholder="ที่อยู่สถานที่ทำงาน" style="width:100%;box-sizing:border-box;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;resize:vertical"></textarea>
+                </div>
+              </div>
+            </div>
+            <div id="customer-empty-detail" style="display:flex;align-items:center;justify-content:center;height:200px;color:var(--text3)">
+              เลือกลูกค้าจากรายการ หรือกด "+ เพิ่มลูกค้า"
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
   </main>
@@ -937,7 +1028,8 @@ let S = {
     {id:'r5',projId:3,version:'R0',date:'2025-09-22',note:'Initial quotation',items:15,total:1419744},
     {id:'r6',projId:3,version:'R1',date:'2025-10-08',note:'ปรับราคาประตูกันเสียงและ Floating Floor',items:15,total:1444500},
   ],
-  extras: {travel:0,access:0,otMul:1,otPct:0,overhead:10,vat:7}
+  extras: {travel:0,access:0,otMul:1,otPct:0,overhead:10,vat:7},
+  customers: []
 };
 
 // ================================================================
@@ -1107,10 +1199,11 @@ function nav(page){
   const el = document.getElementById('page-'+page);
   if (!el) return;
   el.classList.add('active');
-  const map = {dashboard:0,projects:1,'project-detail':1,pricedb:2,master:3};
+  const map = {dashboard:0,projects:1,'project-detail':1,customers:2,pricedb:3,master:4};
   document.querySelectorAll('.nav-item')[map[page]]?.classList.add('active');
   if(page==='dashboard') renderDashboard();
   if(page==='projects') renderProjects();
+  if(page==='customers') renderCustomerList();
   if(page==='pricedb') renderPriceDB();
   if(page==='master') renderMaster();
   if(page==='users') renderUsers();
@@ -2025,73 +2118,110 @@ async function deletePriceItem(id){
 // ================================================================
 // MASTER TEMPLATE
 // ================================================================
-// sub items format: {name, unit, mat, lab} or legacy string
+// sub items format: {name, unit, qty, mat, lab, variance} or legacy string
 function subName(s){ return typeof s==='object'?s.name:s; }
 function subUnit(s){ return typeof s==='object'?(s.unit||'งาน'):'งาน'; }
+function subQty(s){ return typeof s==='object'?(s.qty||1):1; }
 function subMat(s){ return typeof s==='object'?(s.mat||0):0; }
 function subLab(s){ return typeof s==='object'?(s.lab||0):0; }
+function subVar(s){ return typeof s==='object'?(s.variance||0):0; }
+
+function masterSubRowHtml(ci, si, s, units){
+  var nm=subName(s), ut=subUnit(s), qty=subQty(s), mat=subMat(s), lab=subLab(s), vr=subVar(s);
+  var total=(mat+lab)*qty;
+  var proposed=total*(1+vr/100);
+  var uOpts='';
+  for(var i=0;i<units.length;i++) uOpts+='<option'+(ut===units[i]?' selected':'')+'>'+units[i]+'</option>';
+  return '<tr>'
+    +'<td><input value="'+nm.replace(/"/g,'&quot;')+'" id="sub-name-'+ci+'-'+si+'" style="min-width:160px"></td>'
+    +'<td><select id="sub-unit-'+ci+'-'+si+'" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px;width:100%">'+uOpts+'</select></td>'
+    +'<td><input type="number" value="'+qty+'" id="sub-qty-'+ci+'-'+si+'" class="num" style="min-width:60px" oninput="updateMasterRow('+ci+','+si+')"></td>'
+    +'<td><input type="number" value="'+mat+'" id="sub-mat-'+ci+'-'+si+'" class="num" style="min-width:80px" oninput="updateMasterRow('+ci+','+si+')"></td>'
+    +'<td><input type="number" value="'+lab+'" id="sub-lab-'+ci+'-'+si+'" class="num" style="min-width:80px" oninput="updateMasterRow('+ci+','+si+')"></td>'
+    +'<td id="sub-total-'+ci+'-'+si+'" style="text-align:right;font-family:var(--mono);font-size:12px;padding-right:8px;color:var(--text2)">'+fmt(total)+'</td>'
+    +'<td><input type="number" value="'+vr+'" id="sub-var-'+ci+'-'+si+'" class="num" style="min-width:60px" oninput="updateMasterRow('+ci+','+si+')" placeholder="0"></td>'
+    +'<td id="sub-proposed-'+ci+'-'+si+'" style="text-align:right;font-family:var(--mono);font-size:12px;padding-right:8px;color:var(--accent);font-weight:500">'+fmt(proposed)+'</td>'
+    +'<td><button class="btn btn-xs btn-red" data-ci="'+ci+'" data-si="'+si+'" onclick="removeSub(this.dataset.ci,this.dataset.si)">&#215;</button></td>'
+    +'</tr>';
+}
+
+function updateMasterRow(ci,si){
+  var mat=parseFloat(document.getElementById('sub-mat-'+ci+'-'+si)?.value)||0;
+  var lab=parseFloat(document.getElementById('sub-lab-'+ci+'-'+si)?.value)||0;
+  var qty=parseFloat(document.getElementById('sub-qty-'+ci+'-'+si)?.value)||1;
+  var vr=parseFloat(document.getElementById('sub-var-'+ci+'-'+si)?.value)||0;
+  var total=(mat+lab)*qty;
+  var proposed=total*(1+vr/100);
+  var tEl=document.getElementById('sub-total-'+ci+'-'+si);
+  var pEl=document.getElementById('sub-proposed-'+ci+'-'+si);
+  if(tEl) tEl.textContent=fmt(total);
+  if(pEl) pEl.textContent=fmt(proposed);
+}
 
 function renderMaster(){
   const el=document.getElementById('master-content');
   if(!el) return;
   const units=['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'];
-  el.innerHTML=`
-  <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
-    <button class="btn btn-gold" onclick="addCategoryModal()">+ เพิ่มหมวดงาน</button>
-  </div>`+
-  S.categories.map((cat,ci)=>`
-    <div class="card" style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-        <input value="${cat.icon||'📦'}" id="cat-icon-${ci}" style="width:38px;text-align:center;font-size:18px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:4px">
-        <input value="${cat.name}" id="cat-name-${ci}" style="flex:1;font-size:15px;font-weight:500;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">
-        <button class="btn btn-sm" onclick="saveCategoryHeader(${ci})">บันทึกชื่อ</button>
-        <button class="btn btn-sm btn-red" onclick="removeCategory(${ci})">ลบหมวด</button>
-      </div>
-      <table class="master-table">
-        <thead><tr>
-          <th>ชื่อรายการ</th>
-          <th style="width:90px">หน่วย</th>
-          <th class="right" style="width:130px">ค่าของ/หน่วย (฿)</th>
-          <th class="right" style="width:130px">ค่าแรง/หน่วย (฿)</th>
-          <th style="width:36px"></th>
-        </tr></thead>
-        <tbody id="sub-tbody-${ci}">
-          ${cat.sub.map((s,si)=>`
-            <tr>
-              <td><input value="${subName(s)}" id="sub-name-${ci}-${si}" style="min-width:180px"></td>
-              <td><select id="sub-unit-${ci}-${si}" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px;width:100%">
-                ${units.map(u=>`<option ${subUnit(s)===u?'selected':''}>${u}</option>`).join('')}
-              </select></td>
-              <td><input type="number" value="${subMat(s)}" id="sub-mat-${ci}-${si}" class="num" style="min-width:90px"></td>
-              <td><input type="number" value="${subLab(s)}" id="sub-lab-${ci}-${si}" class="num" style="min-width:90px"></td>
-              <td><button class="btn btn-xs btn-red" onclick="removeSub(${ci},${si})">×</button></td>
-            </tr>
-          `).join('')}
-        </tbody>
-        <tfoot>
-          <tr class="master-add-row" id="add-row-${ci}">
-            <td><input id="new-sub-name-${ci}" placeholder="ชื่อรายการย่อย"></td>
-            <td><select id="new-sub-unit-${ci}" style="background:var(--bg4);border:1px solid var(--border);border-radius:var(--r);padding:6px 8px;color:var(--text);font-size:12px;width:100%">${units.map(u=>`<option>${u}</option>`).join('')}</select></td>
-            <td><input type="number" id="new-sub-mat-${ci}" value="0" class="num" placeholder="0"></td>
-            <td><input type="number" id="new-sub-lab-${ci}" value="0" class="num" placeholder="0"></td>
-            <td><button class="btn btn-xs btn-green" onclick="addSubRow(${ci})">+</button></td>
-          </tr>
-        </tfoot>
-      </table>
-      <div style="display:flex;justify-content:flex-end;margin-top:10px">
-        <button class="btn btn-gold" onclick="saveCategoryFull(${ci})">💾 บันทึกหมวดนี้</button>
-      </div>
-    </div>
-  `).join('');
+  var html='<div style="display:flex;justify-content:flex-end;margin-bottom:16px">'
+    +'<button class="btn btn-gold" onclick="addCategoryModal()">+ เพิ่มหมวดงาน</button>'
+    +'</div>';
+  for(var ci=0;ci<S.categories.length;ci++){
+    var cat=S.categories[ci];
+    var uOpts='';
+    for(var ui=0;ui<units.length;ui++) uOpts+='<option>'+units[ui]+'</option>';
+    var rows='';
+    for(var si=0;si<cat.sub.length;si++){
+      rows+=masterSubRowHtml(ci,si,cat.sub[si],units);
+    }
+    html+='<div class="card" style="margin-bottom:16px">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'
+      +'<input value="'+(cat.icon||'').replace(/"/g,'&quot;')+'" id="cat-icon-'+ci+'" style="width:38px;text-align:center;font-size:18px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:4px">'
+      +'<input value="'+cat.name.replace(/"/g,'&quot;')+'" id="cat-name-'+ci+'" style="flex:1;font-size:15px;font-weight:500;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">'
+      +'<button class="btn btn-sm" onclick="saveCategoryHeader('+ci+')">บันทึกชื่อ</button>'
+      +'<button class="btn btn-sm btn-red" onclick="removeCategory('+ci+')">ลบหมวด</button>'
+      +'</div>'
+      +'<div style="overflow-x:auto"><table class="master-table">'
+      +'<thead><tr>'
+      +'<th>ชื่อรายการ</th>'
+      +'<th style="width:80px">หน่วย</th>'
+      +'<th class="right" style="width:70px">จำนวน</th>'
+      +'<th class="right" style="width:100px">ค่าของ/หน่วย</th>'
+      +'<th class="right" style="width:100px">ค่าแรง/หน่วย</th>'
+      +'<th class="right" style="width:100px">รวม (฿)</th>'
+      +'<th class="right" style="width:70px">Var %</th>'
+      +'<th class="right" style="width:110px">ราคาเสนอ (฿)</th>'
+      +'<th style="width:32px"></th>'
+      +'</tr></thead>'
+      +'<tbody id="sub-tbody-'+ci+'">'+rows+'</tbody>'
+      +'<tfoot><tr class="master-add-row">'
+      +'<td><input id="new-sub-name-'+ci+'" placeholder="ชื่อรายการย่อย"></td>'
+      +'<td><select id="new-sub-unit-'+ci+'" style="background:var(--bg4);border:1px solid var(--border);border-radius:var(--r);padding:6px 8px;color:var(--text);font-size:12px;width:100%">'+uOpts+'</select></td>'
+      +'<td><input type="number" id="new-sub-qty-'+ci+'" value="1" class="num"></td>'
+      +'<td><input type="number" id="new-sub-mat-'+ci+'" value="0" class="num"></td>'
+      +'<td><input type="number" id="new-sub-lab-'+ci+'" value="0" class="num"></td>'
+      +'<td></td>'
+      +'<td><input type="number" id="new-sub-var-'+ci+'" value="0" class="num" placeholder="0"></td>'
+      +'<td></td>'
+      +'<td><button class="btn btn-xs btn-green" data-ci="'+ci+'" onclick="addSubRow(this.dataset.ci)">+</button></td>'
+      +'</tr></tfoot>'
+      +'</table></div>'
+      +'<div style="display:flex;justify-content:flex-end;margin-top:10px">'
+      +'<button class="btn btn-gold" data-ci="'+ci+'" onclick="saveCategoryFull(this.dataset.ci)">&#128190; บันทึกหมวดนี้</button>'
+      +'</div>'
+      +'</div>';
+  }
+  el.innerHTML=html;
 }
 
 function addSubRow(ci){
-  const name=document.getElementById(`new-sub-name-${ci}`).value.trim();
+  const name=document.getElementById('new-sub-name-'+ci).value.trim();
   if(!name){toast('กรุณาใส่ชื่อรายการ','error');return;}
-  const unit=document.getElementById(`new-sub-unit-${ci}`).value;
-  const mat=parseFloat(document.getElementById(`new-sub-mat-${ci}`).value)||0;
-  const lab=parseFloat(document.getElementById(`new-sub-lab-${ci}`).value)||0;
-  S.categories[ci].sub.push({name,unit,mat,lab});
+  const unit=document.getElementById('new-sub-unit-'+ci).value;
+  const qty=parseFloat(document.getElementById('new-sub-qty-'+ci).value)||1;
+  const mat=parseFloat(document.getElementById('new-sub-mat-'+ci).value)||0;
+  const lab=parseFloat(document.getElementById('new-sub-lab-'+ci).value)||0;
+  const variance=parseFloat(document.getElementById('new-sub-var-'+ci).value)||0;
+  S.categories[ci].sub.push({name,unit,qty,mat,lab,variance});
   renderMaster();
 }
 
@@ -2112,10 +2242,12 @@ async function saveCategoryFull(ci){
   cat.name=document.getElementById(`cat-name-${ci}`).value;
   // Collect all edited sub rows
   cat.sub=cat.sub.map((_,si)=>({
-    name: document.getElementById(`sub-name-${ci}-${si}`)?.value||subName(cat.sub[si]),
-    unit: document.getElementById(`sub-unit-${ci}-${si}`)?.value||subUnit(cat.sub[si]),
-    mat: parseFloat(document.getElementById(`sub-mat-${ci}-${si}`)?.value)||0,
-    lab: parseFloat(document.getElementById(`sub-lab-${ci}-${si}`)?.value)||0
+    name: document.getElementById('sub-name-'+ci+'-'+si)?.value||subName(cat.sub[si]),
+    unit: document.getElementById('sub-unit-'+ci+'-'+si)?.value||subUnit(cat.sub[si]),
+    qty: parseFloat(document.getElementById('sub-qty-'+ci+'-'+si)?.value)||1,
+    mat: parseFloat(document.getElementById('sub-mat-'+ci+'-'+si)?.value)||0,
+    lab: parseFloat(document.getElementById('sub-lab-'+ci+'-'+si)?.value)||0,
+    variance: parseFloat(document.getElementById('sub-var-'+ci+'-'+si)?.value)||0
   }));
   try{
     await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
@@ -2647,15 +2779,169 @@ function updateAllSelects(){
 }
 
 // ================================================================
+// CUSTOMERS
+// ================================================================
+let _editingCustomerId = null;
+
+function custDisplayName(c){
+  if(c.type==='company') return c.company||(c.first_name+' '+c.last_name).trim()||'(ไม่มีชื่อ)';
+  return (c.first_name+' '+c.last_name).trim()||'(ไม่มีชื่อ)';
+}
+
+function renderCustomerList(){
+  const search=(document.getElementById('cust-search')?.value||'').toLowerCase();
+  const list=document.getElementById('customer-list');
+  if(!list) return;
+  let items=S.customers;
+  if(search) items=items.filter(c=>
+    custDisplayName(c).toLowerCase().includes(search)||
+    (c.phone1||'').includes(search)||(c.phone2||'').includes(search)||
+    (c.contact_name||'').toLowerCase().includes(search)
+  );
+  if(items.length===0){
+    list.innerHTML='<div style="padding:16px;text-align:center;color:var(--text3);font-size:13px">'+(search?'ไม่พบลูกค้า':'ยังไม่มีลูกค้า — กด + เพิ่มลูกค้า')+'</div>';
+    return;
+  }
+  list.innerHTML=items.map(c=>{
+    var isActive=_editingCustomerId===c.id;
+    return '<div onclick="openCustomer('+c.id+')" style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;background:'+(isActive?'var(--accent-dim)':'transparent')+';transition:background .1s" onmouseover="if(!'+isActive+')this.style.background=\'var(--bg3)\'" onmouseout="if(!'+isActive+')this.style.background=\'transparent\'">'
+      +'<div style="font-weight:500;font-size:13px;margin-bottom:2px">'+custDisplayName(c)+'</div>'
+      +'<div style="font-size:11px;color:var(--text3)">'+(c.type==='company'?'นิติบุคคล':'บุคคลธรรมดา')+(c.phone1?' · '+c.phone1:'')+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function newCustomer(){
+  _editingCustomerId = null;
+  document.getElementById('cust-id').value='';
+  document.getElementById('cust-firstname').value='';
+  document.getElementById('cust-lastname').value='';
+  document.getElementById('cust-company').value='';
+  document.getElementById('cust-contact').value='';
+  document.getElementById('cust-phone1').value='';
+  document.getElementById('cust-phone2').value='';
+  document.getElementById('cust-billing').value='';
+  document.getElementById('cust-work').value='';
+  document.getElementById('cust-same-addr').checked=false;
+  document.querySelector('input[name="cust-type"][value="individual"]').checked=true;
+  onCustTypeChange();
+  document.getElementById('cust-form-title').textContent='เพิ่มลูกค้าใหม่';
+  document.getElementById('cust-delete-btn').style.display='none';
+  document.getElementById('customer-form-card').style.display='block';
+  document.getElementById('customer-empty-detail').style.display='none';
+}
+
+function openCustomer(id){
+  const c=S.customers.find(x=>x.id===id);
+  if(!c) return;
+  _editingCustomerId=id;
+  document.getElementById('cust-id').value=id;
+  document.querySelector('input[name="cust-type"][value="'+(c.type||'individual')+'"]').checked=true;
+  onCustTypeChange();
+  document.getElementById('cust-firstname').value=c.first_name||'';
+  document.getElementById('cust-lastname').value=c.last_name||'';
+  document.getElementById('cust-company').value=c.company||'';
+  document.getElementById('cust-contact').value=c.contact_name||'';
+  document.getElementById('cust-phone1').value=c.phone1||'';
+  document.getElementById('cust-phone2').value=c.phone2||'';
+  document.getElementById('cust-billing').value=c.billing_address||'';
+  document.getElementById('cust-work').value=c.work_address||'';
+  const sameAddr=c.billing_address&&c.billing_address===c.work_address;
+  document.getElementById('cust-same-addr').checked=!!sameAddr;
+  document.getElementById('cust-form-title').textContent='แก้ไขข้อมูลลูกค้า';
+  document.getElementById('cust-delete-btn').style.display='inline-flex';
+  document.getElementById('customer-form-card').style.display='block';
+  document.getElementById('customer-empty-detail').style.display='none';
+  renderCustomerList();
+}
+
+function closeCustomerForm(){
+  _editingCustomerId=null;
+  document.getElementById('customer-form-card').style.display='none';
+  document.getElementById('customer-empty-detail').style.display='flex';
+  renderCustomerList();
+}
+
+function onCustTypeChange(){
+  const type=document.querySelector('input[name="cust-type"]:checked')?.value||'individual';
+  const isCompany=type==='company';
+  document.getElementById('cust-company-group').style.display=isCompany?'block':'none';
+  document.getElementById('cust-lastname-group').style.display=isCompany?'none':'block';
+  document.getElementById('cust-firstname-label').textContent=isCompany?'ชื่อย่อ/ชื่อเรียก':'ชื่อ';
+}
+
+function onBillingInput(){
+  if(document.getElementById('cust-same-addr').checked){
+    document.getElementById('cust-work').value=document.getElementById('cust-billing').value;
+  }
+}
+
+function onSameAddrChange(){
+  if(document.getElementById('cust-same-addr').checked){
+    document.getElementById('cust-work').value=document.getElementById('cust-billing').value;
+    document.getElementById('cust-work').disabled=true;
+  } else {
+    document.getElementById('cust-work').disabled=false;
+  }
+}
+
+async function saveCustomer(){
+  const id=document.getElementById('cust-id').value;
+  const type=document.querySelector('input[name="cust-type"]:checked')?.value||'individual';
+  const body={
+    type,
+    first_name: document.getElementById('cust-firstname').value.trim(),
+    last_name: document.getElementById('cust-lastname').value.trim(),
+    company: document.getElementById('cust-company').value.trim(),
+    contact_name: document.getElementById('cust-contact').value.trim(),
+    phone1: document.getElementById('cust-phone1').value.trim(),
+    phone2: document.getElementById('cust-phone2').value.trim(),
+    billing_address: document.getElementById('cust-billing').value.trim(),
+    work_address: document.getElementById('cust-work').value.trim()
+  };
+  try{
+    if(id){
+      const updated=await api('/api/customers/'+id,{method:'PUT',body});
+      const idx=S.customers.findIndex(x=>x.id===updated.id);
+      if(idx>=0) S.customers[idx]=updated; else S.customers.push(updated);
+      toast('บันทึกข้อมูลลูกค้าแล้ว');
+    } else {
+      const created=await api('/api/customers',{method:'POST',body});
+      S.customers.push(created);
+      _editingCustomerId=created.id;
+      document.getElementById('cust-id').value=created.id;
+      document.getElementById('cust-delete-btn').style.display='inline-flex';
+      document.getElementById('cust-form-title').textContent='แก้ไขข้อมูลลูกค้า';
+      toast('เพิ่มลูกค้าเรียบร้อย');
+    }
+    renderCustomerList();
+  }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
+}
+
+async function deleteCustomer(){
+  const id=document.getElementById('cust-id').value;
+  if(!id) return;
+  const c=S.customers.find(x=>x.id===parseInt(id));
+  if(!confirm('ลบลูกค้า "'+custDisplayName(c)+'" ?')) return;
+  try{
+    await api('/api/customers/'+id,{method:'DELETE'});
+    S.customers=S.customers.filter(x=>x.id!==parseInt(id));
+    closeCustomerForm();
+    toast('ลบลูกค้าแล้ว');
+  }catch(e){ toast('ลบล้มเหลว: '+e.message,'error'); }
+}
+
+// ================================================================
 // LOAD / SAVE
 // ================================================================
 async function loadData(){
   try{
-    const [projectsRes, categories, priceDB, revisions] = await Promise.all([
+    const [projectsRes, categories, priceDB, revisions, customers] = await Promise.all([
       api('/api/projects'),
       api('/api/categories'),
       api('/api/price-db'),
-      api('/api/revisions')
+      api('/api/revisions'),
+      api('/api/customers')
     ]);
     const projects = projectsRes?.data || projectsRes || [];
     if(projects.length) S.projects = projects.map(p=>({
@@ -2673,6 +2959,7 @@ async function loadData(){
       id:r.id, projId:r.project_id, version:r.version,
       date:r.date, note:r.note, items:r.items, total:r.total
     }));
+    if(Array.isArray(customers)&&customers.length) S.customers = customers;
     loadUiState();
     if(S.activeProjectId){
       await loadLineItemsForProject(S.activeProjectId);

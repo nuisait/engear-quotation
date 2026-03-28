@@ -19,6 +19,7 @@ app.use('/api/categories',                     auth, require('./server/routes/ca
 app.use('/api/revisions',                      auth, require('./server/routes/revisions'));
 app.use('/api/migrate',                        auth, require('./server/routes/migrate'));
 app.use('/api/email',                          auth, require('./server/routes/email'));
+app.use('/api/customers',                      auth, require('./server/routes/customers'));
 
 // Fallback: serve index.html
 app.get('/{*path}', (req, res) => {
