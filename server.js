@@ -27,9 +27,15 @@ app.get('/{*path}', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
+  const nets = require('os').networkInterfaces();
+  let localIP = 'localhost';
+  for (const iface of Object.values(nets).flat()) {
+    if (iface.family === 'IPv4' && !iface.internal) { localIP = iface.address; break; }
+  }
   console.log(`✅ Server running at http://localhost:${PORT}`);
+  console.log(`🌐 Local network:   http://${localIP}:${PORT}  ← แชร์ link นี้ให้คนในบ้าน`);
   const dbInfo = process.env.DB_HOST ? `PostgreSQL (${process.env.DB_HOST})` : process.env.DATABASE_URL ? 'PostgreSQL (URL)' : 'No database configured!';
-  console.log(`📦 Database: ${dbInfo}`);;
+  console.log(`📦 Database: ${dbInfo}`);
   console.log(`🔐 Auth: JWT (${process.env.JWT_SECRET ? 'custom secret' : 'default secret — set JWT_SECRET in production'})`);
 });
