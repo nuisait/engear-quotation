@@ -2168,7 +2168,8 @@ function updateSubCalc(ci,si){
   }
   var labTotal=0;
   for(var li=0;li<labs.length;li++) labTotal+=parseFloat(document.getElementById('lab-cost-'+ci+'-'+si+'-'+li)?.value)||0;
-  var grand=matTotal+labTotal;
+  var qty=parseFloat(document.getElementById('sub-qty-'+ci+'-'+si)?.value)||1;
+  var grand=(matTotal+labTotal)*qty;
   var profit=parseFloat(document.getElementById('sub-profit-'+ci+'-'+si)?.value)||0;
   var proposed=grand*(1+profit/100);
   function upd(id,v){ var e=document.getElementById(id); if(e) e.textContent=fmt(v); }
@@ -2212,7 +2213,7 @@ function masterSubRowHtml(ci,si,s,units){
   var nm=subName(s), ut=subUnit(s), qty=subQty(s), profit=subProfit(s);
   var mats=subMaterials(s), labs=subLabor(s);
   var matTotal=calcMatTotal(mats), labTotal=calcLabTotal(labs);
-  var grand=matTotal+labTotal, proposed=grand*(1+profit/100);
+  var grand=(matTotal+labTotal)*qty, proposed=grand*(1+profit/100);
   var uOpts=''; for(var i=0;i<units.length;i++) uOpts+='<option'+(ut===units[i]?' selected':'')+'>'+units[i]+'</option>';
   var inp='background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px';
   var key=ci+'-'+si, isOpen=_expandedSubs.has(key);
@@ -2220,7 +2221,7 @@ function masterSubRowHtml(ci,si,s,units){
   var html='<tr style="background:var(--bg3);border-top:2px solid var(--border)">'
     +'<td style="padding:6px 4px 6px 8px"><input value="'+nm.replace(/"/g,'&quot;')+'" id="sub-name-'+ci+'-'+si+'" style="min-width:150px;font-weight:500;'+inp+'"></td>'
     +'<td><select id="sub-unit-'+ci+'-'+si+'" style="'+inp+';width:100%">'+uOpts+'</select></td>'
-    +'<td><input type="number" value="'+qty+'" id="sub-qty-'+ci+'-'+si+'" class="num" style="min-width:55px;'+inp+'"></td>'
+    +'<td><input type="number" value="'+qty+'" id="sub-qty-'+ci+'-'+si+'" class="num" style="min-width:55px;'+inp+'" oninput="updateSubCalc('+ci+','+si+')"></td>'
     +'<td id="sub-mat-total-'+ci+'-'+si+'" style="text-align:right;font-family:var(--mono);font-size:12px;padding-right:8px;color:var(--text2)">'+fmt(matTotal)+'</td>'
     +'<td id="sub-lab-total-'+ci+'-'+si+'" style="text-align:right;font-family:var(--mono);font-size:12px;padding-right:8px;color:var(--text2)">'+fmt(labTotal)+'</td>'
     +'<td id="sub-grand-'+ci+'-'+si+'" style="text-align:right;font-family:var(--mono);font-size:12px;padding-right:8px;font-weight:500;color:var(--text)">'+fmt(grand)+'</td>'
