@@ -1764,7 +1764,7 @@ function onMCatChange(){
   if(cat){
     const dbNames = dbItems.map(p=>p.name);
     cat.sub.filter(s=>!dbNames.includes(subName(s))).forEach(s=>{
-      const nm=subName(s), mat=subMat(s), lab=subLab(s), unit=subUnit(s);
+      const nm=subName(s), mat=subMatTotal(s), lab=subLabTotal(s), unit=subUnit(s);
       const hasPrice=mat>0||lab>0;
       html+=`<div onclick="fillFromSubEl(this)" data-name="${nm.replace(/"/g,'&quot;')}" data-unit="${unit}" data-mat="${mat}" data-lab="${lab}" style="
         background:var(--bg3);border:1px dashed var(--border2);border-radius:var(--r);
@@ -2097,180 +2097,324 @@ function updateRevFilterSelect(){
 }
 
 // ================================================================
-// PRICE DB
-// ================================================================
-// ================================================================
 // MASTER TEMPLATE
 // ================================================================
-// sub items format: {name, unit, qty, mat, lab, variance} or legacy string
+// sub-item format: {name, unit, qty, materials:[{name,cost,variance}], labor:[{name,cost}], profit_pct}
+// backward compat: {name, unit, qty, mat, lab, variance}
 function subName(s){ return typeof s==='object'?s.name:s; }
 function subUnit(s){ return typeof s==='object'?(s.unit||'งาน'):'งาน'; }
 function subQty(s){ return typeof s==='object'?(s.qty||1):1; }
-function subMat(s){ return typeof s==='object'?(s.mat||0):0; }
-function subLab(s){ return typeof s==='object'?(s.lab||0):0; }
-function subVar(s){ return typeof s==='object'?(s.variance||0):0; }
+function subProfit(s){ return typeof s==='object'?(s.profit_pct||0):0; }
+function subMaterials(s){
+  if(typeof s!=='object') return [];
+  if(Array.isArray(s.materials)) return s.materials;
+  var r=[]; if((s.mat||0)>0) r.push({name:'วัสดุ',cost:s.mat||0,variance:s.variance||0}); return r;
+}
+function subLabor(s){
+  if(typeof s!=='object') return [];
+  if(Array.isArray(s.labor)) return s.labor;
+  var r=[]; if((s.lab||0)>0) r.push({name:'ค่าแรง',cost:s.lab||0}); return r;
+}
+function calcMatTotal(mats){ return mats.reduce(function(t,m){return t+(m.cost||0)*(1+(m.variance||0)/100);},0); }
+function calcLabTotal(labs){ return labs.reduce(function(t,l){return t+(l.cost||0);},0); }
+function subMatTotal(s){ return calcMatTotal(subMaterials(s)); }
+function subLabTotal(s){ return calcLabTotal(subLabor(s)); }
 
-function masterSubRowHtml(ci, si, s, units){
-  var nm=subName(s), ut=subUnit(s), qty=subQty(s), mat=subMat(s), lab=subLab(s), vr=subVar(s);
-  var total=(mat+lab)*qty;
-  var proposed=total*(1+vr/100);
-  var uOpts='';
-  for(var i=0;i<units.length;i++) uOpts+='<option'+(ut===units[i]?' selected':'')+'>'+units[i]+'</option>';
-  return '<tr>'
-    +'<td><input value="'+nm.replace(/"/g,'&quot;')+'" id="sub-name-'+ci+'-'+si+'" style="min-width:160px"></td>'
-    +'<td><select id="sub-unit-'+ci+'-'+si+'" style="background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px;width:100%">'+uOpts+'</select></td>'
-    +'<td><input type="number" value="'+qty+'" id="sub-qty-'+ci+'-'+si+'" class="num" style="min-width:60px" oninput="updateMasterRow('+ci+','+si+')"></td>'
-    +'<td><input type="number" value="'+mat+'" id="sub-mat-'+ci+'-'+si+'" class="num" style="min-width:80px" oninput="updateMasterRow('+ci+','+si+')"></td>'
-    +'<td><input type="number" value="'+lab+'" id="sub-lab-'+ci+'-'+si+'" class="num" style="min-width:80px" oninput="updateMasterRow('+ci+','+si+')"></td>'
-    +'<td id="sub-total-'+ci+'-'+si+'" style="text-align:right;font-family:var(--mono);font-size:12px;padding-right:8px;color:var(--text2)">'+fmt(total)+'</td>'
-    +'<td><input type="number" value="'+vr+'" id="sub-var-'+ci+'-'+si+'" class="num" style="min-width:60px" oninput="updateMasterRow('+ci+','+si+')" placeholder="0"></td>'
-    +'<td id="sub-proposed-'+ci+'-'+si+'" style="text-align:right;font-family:var(--mono);font-size:12px;padding-right:8px;color:var(--accent);font-weight:500">'+fmt(proposed)+'</td>'
-    +'<td><button class="btn btn-xs btn-red" data-ci="'+ci+'" data-si="'+si+'" onclick="removeSub(this.dataset.ci,this.dataset.si)">&#215;</button></td>'
-    +'</tr>';
+var _expandedSubs = new Set();
+
+function syncSubFromDom(ci,si){
+  ci=parseInt(ci); si=parseInt(si);
+  var s=S.categories[ci].sub[si];
+  var mats=subMaterials(s), labs=subLabor(s);
+  var n=document.getElementById('sub-name-'+ci+'-'+si); if(n) s.name=n.value;
+  var u=document.getElementById('sub-unit-'+ci+'-'+si); if(u) s.unit=u.value;
+  var q=document.getElementById('sub-qty-'+ci+'-'+si); if(q) s.qty=parseFloat(q.value)||1;
+  var p=document.getElementById('sub-profit-'+ci+'-'+si); if(p) s.profit_pct=parseFloat(p.value)||0;
+  s.materials=mats.map(function(m,mi){
+    var nn=document.getElementById('mat-name-'+ci+'-'+si+'-'+mi);
+    var nc=document.getElementById('mat-cost-'+ci+'-'+si+'-'+mi);
+    var nv=document.getElementById('mat-var-'+ci+'-'+si+'-'+mi);
+    return {name:(nn?nn.value:m.name),cost:parseFloat(nc?nc.value:0)||0,variance:parseFloat(nv?nv.value:0)||0};
+  });
+  s.labor=labs.map(function(l,li){
+    var ln=document.getElementById('lab-name-'+ci+'-'+si+'-'+li);
+    var lc=document.getElementById('lab-cost-'+ci+'-'+si+'-'+li);
+    return {name:(ln?ln.value:l.name),cost:parseFloat(lc?lc.value:0)||0};
+  });
+  delete s.mat; delete s.lab; delete s.variance;
 }
 
-function updateMasterRow(ci,si){
-  var mat=parseFloat(document.getElementById('sub-mat-'+ci+'-'+si)?.value)||0;
-  var lab=parseFloat(document.getElementById('sub-lab-'+ci+'-'+si)?.value)||0;
-  var qty=parseFloat(document.getElementById('sub-qty-'+ci+'-'+si)?.value)||1;
-  var vr=parseFloat(document.getElementById('sub-var-'+ci+'-'+si)?.value)||0;
-  var total=(mat+lab)*qty;
-  var proposed=total*(1+vr/100);
-  var tEl=document.getElementById('sub-total-'+ci+'-'+si);
-  var pEl=document.getElementById('sub-proposed-'+ci+'-'+si);
-  if(tEl) tEl.textContent=fmt(total);
-  if(pEl) pEl.textContent=fmt(proposed);
+function toggleSubDetail(ci,si){
+  var key=ci+'-'+si;
+  var row=document.getElementById('sub-detail-'+key);
+  var btn=document.getElementById('sub-toggle-'+key);
+  if(!row) return;
+  var open=row.style.display==='table-row';
+  row.style.display=open?'none':'table-row';
+  if(btn) btn.textContent=open?'▼':'▲';
+  if(open) _expandedSubs.delete(key); else _expandedSubs.add(key);
+}
+
+function updateSubCalc(ci,si){
+  ci=parseInt(ci); si=parseInt(si);
+  var s=S.categories[ci].sub[si];
+  var mats=subMaterials(s), labs=subLabor(s);
+  var matTotal=0;
+  for(var mi=0;mi<mats.length;mi++){
+    var cost=parseFloat(document.getElementById('mat-cost-'+ci+'-'+si+'-'+mi)?.value)||0;
+    var vr=parseFloat(document.getElementById('mat-var-'+ci+'-'+si+'-'+mi)?.value)||0;
+    var mT=cost*(1+vr/100); matTotal+=mT;
+    var tel=document.getElementById('mat-total-'+ci+'-'+si+'-'+mi); if(tel) tel.textContent=fmt(mT);
+  }
+  var labTotal=0;
+  for(var li=0;li<labs.length;li++) labTotal+=parseFloat(document.getElementById('lab-cost-'+ci+'-'+si+'-'+li)?.value)||0;
+  var grand=matTotal+labTotal;
+  var profit=parseFloat(document.getElementById('sub-profit-'+ci+'-'+si)?.value)||0;
+  var proposed=grand*(1+profit/100);
+  function upd(id,v){ var e=document.getElementById(id); if(e) e.textContent=fmt(v); }
+  upd('sub-mat-sum-'+ci+'-'+si, matTotal); upd('sub-lab-sum-'+ci+'-'+si, labTotal);
+  upd('sub-mat-total-'+ci+'-'+si, matTotal); upd('sub-lab-total-'+ci+'-'+si, labTotal);
+  upd('sub-grand-'+ci+'-'+si, grand); upd('sub-proposed-'+ci+'-'+si, proposed);
+}
+
+function addMat(ci,si){
+  ci=parseInt(ci); si=parseInt(si); syncSubFromDom(ci,si);
+  var name=(document.getElementById('new-mat-name-'+ci+'-'+si)||{value:''}).value.trim();
+  if(!name){toast('กรุณาใส่ชื่อวัสดุ','error');return;}
+  var cost=parseFloat((document.getElementById('new-mat-cost-'+ci+'-'+si)||{value:'0'}).value)||0;
+  var variance=parseFloat((document.getElementById('new-mat-var-'+ci+'-'+si)||{value:'0'}).value)||0;
+  S.categories[ci].sub[si].materials.push({name,cost,variance});
+  _expandedSubs.add(ci+'-'+si); renderMaster();
+}
+
+function addLab(ci,si){
+  ci=parseInt(ci); si=parseInt(si); syncSubFromDom(ci,si);
+  var name=(document.getElementById('new-lab-name-'+ci+'-'+si)||{value:''}).value.trim();
+  if(!name){toast('กรุณาใส่ชื่อค่าแรง','error');return;}
+  var cost=parseFloat((document.getElementById('new-lab-cost-'+ci+'-'+si)||{value:'0'}).value)||0;
+  S.categories[ci].sub[si].labor.push({name,cost});
+  _expandedSubs.add(ci+'-'+si); renderMaster();
+}
+
+function removeMat(ci,si,mi){
+  ci=parseInt(ci); si=parseInt(si); mi=parseInt(mi); syncSubFromDom(ci,si);
+  S.categories[ci].sub[si].materials.splice(mi,1);
+  _expandedSubs.add(ci+'-'+si); renderMaster();
+}
+
+function removeLab(ci,si,li){
+  ci=parseInt(ci); si=parseInt(si); li=parseInt(li); syncSubFromDom(ci,si);
+  S.categories[ci].sub[si].labor.splice(li,1);
+  _expandedSubs.add(ci+'-'+si); renderMaster();
+}
+
+function masterSubRowHtml(ci,si,s,units){
+  var nm=subName(s), ut=subUnit(s), qty=subQty(s), profit=subProfit(s);
+  var mats=subMaterials(s), labs=subLabor(s);
+  var matTotal=calcMatTotal(mats), labTotal=calcLabTotal(labs);
+  var grand=matTotal+labTotal, proposed=grand*(1+profit/100);
+  var uOpts=''; for(var i=0;i<units.length;i++) uOpts+='<option'+(ut===units[i]?' selected':'')+'>'+units[i]+'</option>';
+  var inp='background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 6px;color:var(--text);font-size:12px';
+  var key=ci+'-'+si, isOpen=_expandedSubs.has(key);
+
+  var html='<tr style="background:var(--bg3);border-top:2px solid var(--border)">'
+    +'<td style="padding:6px 4px 6px 8px"><input value="'+nm.replace(/"/g,'&quot;')+'" id="sub-name-'+ci+'-'+si+'" style="min-width:150px;font-weight:500;'+inp+'"></td>'
+    +'<td><select id="sub-unit-'+ci+'-'+si+'" style="'+inp+';width:100%">'+uOpts+'</select></td>'
+    +'<td><input type="number" value="'+qty+'" id="sub-qty-'+ci+'-'+si+'" class="num" style="min-width:55px;'+inp+'"></td>'
+    +'<td id="sub-mat-total-'+ci+'-'+si+'" style="text-align:right;font-family:var(--mono);font-size:12px;padding-right:8px;color:var(--text2)">'+fmt(matTotal)+'</td>'
+    +'<td id="sub-lab-total-'+ci+'-'+si+'" style="text-align:right;font-family:var(--mono);font-size:12px;padding-right:8px;color:var(--text2)">'+fmt(labTotal)+'</td>'
+    +'<td id="sub-grand-'+ci+'-'+si+'" style="text-align:right;font-family:var(--mono);font-size:12px;padding-right:8px;font-weight:500;color:var(--text)">'+fmt(grand)+'</td>'
+    +'<td><input type="number" value="'+profit+'" id="sub-profit-'+ci+'-'+si+'" class="num" style="min-width:55px;'+inp+'" oninput="updateSubCalc('+ci+','+si+')" placeholder="0"></td>'
+    +'<td id="sub-proposed-'+ci+'-'+si+'" style="text-align:right;font-family:var(--mono);font-size:12px;padding-right:8px;color:var(--accent);font-weight:600">'+fmt(proposed)+'</td>'
+    +'<td style="white-space:nowrap;padding:4px 6px">'
+    +'<button class="btn btn-xs" id="sub-toggle-'+key+'" data-ci="'+ci+'" data-si="'+si+'" onclick="toggleSubDetail(this.dataset.ci,this.dataset.si)" title="รายละเอียดวัสดุ/แรง">'+(isOpen?'▲':'▼')+'</button> '
+    +'<button class="btn btn-xs btn-red" data-ci="'+ci+'" data-si="'+si+'" onclick="removeSub(this.dataset.ci,this.dataset.si)">✕</button>'
+    +'</td></tr>';
+
+  // Expandable detail row
+  html+='<tr id="sub-detail-'+key+'" style="display:'+(isOpen?'table-row':'none')+'">'
+    +'<td colspan="9" style="padding:0;background:var(--bg2);border-bottom:2px solid var(--border)">'
+    +'<div style="padding:14px 16px">'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:12px">';
+
+  // ---- Materials ----
+  html+='<div>'
+    +'<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px">ค่าของ / วัสดุ</div>'
+    +'<table style="width:100%;font-size:12px;border-collapse:collapse">'
+    +'<thead><tr>'
+    +'<th style="text-align:left;padding:3px 6px;color:var(--text3);font-size:11px;font-weight:500">วัสดุ</th>'
+    +'<th style="text-align:right;padding:3px 6px;color:var(--text3);font-size:11px;font-weight:500">ราคา/หน่วย</th>'
+    +'<th style="text-align:right;padding:3px 6px;color:var(--text3);font-size:11px;font-weight:500">Var%</th>'
+    +'<th style="text-align:right;padding:3px 6px;color:var(--text3);font-size:11px;font-weight:500">รวม</th>'
+    +'<th style="width:24px"></th>'
+    +'</tr></thead><tbody>';
+  for(var mi=0;mi<mats.length;mi++){
+    var m=mats[mi], mT=(m.cost||0)*(1+(m.variance||0)/100);
+    html+='<tr>'
+      +'<td style="padding:2px 4px"><input value="'+m.name.replace(/"/g,'&quot;')+'" id="mat-name-'+ci+'-'+si+'-'+mi+'" style="width:100%;'+inp+'"></td>'
+      +'<td style="padding:2px 4px"><input type="number" value="'+(m.cost||0)+'" id="mat-cost-'+ci+'-'+si+'-'+mi+'" class="num" style="min-width:60px;'+inp+'" oninput="updateSubCalc('+ci+','+si+')"></td>'
+      +'<td style="padding:2px 4px"><input type="number" value="'+(m.variance||0)+'" id="mat-var-'+ci+'-'+si+'-'+mi+'" class="num" style="min-width:45px;'+inp+'" oninput="updateSubCalc('+ci+','+si+')"></td>'
+      +'<td style="text-align:right;padding:2px 8px;font-family:var(--mono);color:var(--text2)" id="mat-total-'+ci+'-'+si+'-'+mi+'">'+fmt(mT)+'</td>'
+      +'<td><button class="btn btn-xs btn-red" data-ci="'+ci+'" data-si="'+si+'" data-mi="'+mi+'" onclick="removeMat(this.dataset.ci,this.dataset.si,this.dataset.mi)">✕</button></td>'
+      +'</tr>';
+  }
+  html+='</tbody></table>'
+    +'<div style="display:flex;gap:6px;margin-top:8px;align-items:center">'
+    +'<input id="new-mat-name-'+ci+'-'+si+'" placeholder="ชื่อวัสดุ" style="flex:2;'+inp+'">'
+    +'<input type="number" id="new-mat-cost-'+ci+'-'+si+'" value="0" class="num" placeholder="ราคา" style="flex:1;min-width:0;'+inp+'">'
+    +'<input type="number" id="new-mat-var-'+ci+'-'+si+'" value="0" class="num" placeholder="Var%" style="width:52px;'+inp+'">'
+    +'<button class="btn btn-xs btn-green" data-ci="'+ci+'" data-si="'+si+'" onclick="addMat(this.dataset.ci,this.dataset.si)">+วัสดุ</button>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:flex-end;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">'
+    +'<span style="font-size:12px;color:var(--text3);margin-right:8px">รวมค่าของ</span>'
+    +'<span style="font-family:var(--mono);font-weight:600;font-size:13px" id="sub-mat-sum-'+ci+'-'+si+'">'+fmt(matTotal)+'</span>'
+    +'</div>'
+    +'</div>'; // end materials col
+
+  // ---- Labor ----
+  html+='<div>'
+    +'<div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:8px">ค่าแรง</div>'
+    +'<table style="width:100%;font-size:12px;border-collapse:collapse">'
+    +'<thead><tr>'
+    +'<th style="text-align:left;padding:3px 6px;color:var(--text3);font-size:11px;font-weight:500">รายการ</th>'
+    +'<th style="text-align:right;padding:3px 6px;color:var(--text3);font-size:11px;font-weight:500">ราคา</th>'
+    +'<th style="width:24px"></th>'
+    +'</tr></thead><tbody>';
+  for(var li=0;li<labs.length;li++){
+    var l=labs[li];
+    html+='<tr>'
+      +'<td style="padding:2px 4px"><input value="'+l.name.replace(/"/g,'&quot;')+'" id="lab-name-'+ci+'-'+si+'-'+li+'" style="width:100%;'+inp+'"></td>'
+      +'<td style="padding:2px 4px"><input type="number" value="'+(l.cost||0)+'" id="lab-cost-'+ci+'-'+si+'-'+li+'" class="num" style="min-width:80px;'+inp+'" oninput="updateSubCalc('+ci+','+si+')"></td>'
+      +'<td><button class="btn btn-xs btn-red" data-ci="'+ci+'" data-si="'+si+'" data-li="'+li+'" onclick="removeLab(this.dataset.ci,this.dataset.si,this.dataset.li)">✕</button></td>'
+      +'</tr>';
+  }
+  html+='</tbody></table>'
+    +'<div style="display:flex;gap:6px;margin-top:8px;align-items:center">'
+    +'<input id="new-lab-name-'+ci+'-'+si+'" placeholder="ชื่อค่าแรง" style="flex:2;'+inp+'">'
+    +'<input type="number" id="new-lab-cost-'+ci+'-'+si+'" value="0" class="num" placeholder="ราคา" style="flex:1;min-width:0;'+inp+'">'
+    +'<button class="btn btn-xs btn-green" data-ci="'+ci+'" data-si="'+si+'" onclick="addLab(this.dataset.ci,this.dataset.si)">+ค่าแรง</button>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:flex-end;margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">'
+    +'<span style="font-size:12px;color:var(--text3);margin-right:8px">รวมค่าแรง</span>'
+    +'<span style="font-family:var(--mono);font-weight:600;font-size:13px" id="sub-lab-sum-'+ci+'-'+si+'">'+fmt(labTotal)+'</span>'
+    +'</div>'
+    +'</div>'; // end labor col
+
+  html+='</div>'; // end grid
+  // Summary bar (full width)
+  html+='<div style="display:flex;gap:24px;align-items:center;padding:8px 12px;background:var(--bg4);border-radius:var(--r);border:1px solid var(--border)">'
+    +'<span style="font-size:12px;color:var(--text3)">รวมค่าของ + ค่าแรง: <strong style="color:var(--text);font-family:var(--mono)" id="sub-grand-disp-'+key+'">'+fmt(grand)+'</strong></span>'
+    +'<span style="font-size:12px;color:var(--text3)">กำไร '+profit+'%</span>'
+    +'<span style="font-size:13px;color:var(--text3)">ราคาเสนอลูกค้า: <strong style="color:var(--accent);font-family:var(--mono);font-size:14px">'+fmt(proposed)+'</strong></span>'
+    +'</div>'
+    +'</div></td></tr>';
+
+  return html;
 }
 
 function renderMaster(){
-  const el=document.getElementById('master-content');
+  var el=document.getElementById('master-content');
   if(!el) return;
-  const units=['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'];
+  var units=['ตร.ม.','ม.','ชุด','งาน','ชิ้น','เหมา','แผ่น','ชั้น'];
   var html='<div style="display:flex;justify-content:flex-end;margin-bottom:16px">'
     +'<button class="btn btn-gold" onclick="addCategoryModal()">+ เพิ่มหมวดงาน</button>'
     +'</div>';
   for(var ci=0;ci<S.categories.length;ci++){
     var cat=S.categories[ci];
-    var uOpts='';
-    for(var ui=0;ui<units.length;ui++) uOpts+='<option>'+units[ui]+'</option>';
-    var rows='';
-    for(var si=0;si<cat.sub.length;si++){
-      rows+=masterSubRowHtml(ci,si,cat.sub[si],units);
-    }
+    var uOpts=''; for(var ui=0;ui<units.length;ui++) uOpts+='<option>'+units[ui]+'</option>';
+    var rows=''; for(var si=0;si<cat.sub.length;si++) rows+=masterSubRowHtml(ci,si,cat.sub[si],units);
     html+='<div class="card" style="margin-bottom:16px">'
       +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">'
       +'<input value="'+(cat.icon||'').replace(/"/g,'&quot;')+'" id="cat-icon-'+ci+'" style="width:38px;text-align:center;font-size:18px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:4px">'
       +'<input value="'+cat.name.replace(/"/g,'&quot;')+'" id="cat-name-'+ci+'" style="flex:1;font-size:15px;font-weight:500;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text)">'
-      +'<button class="btn btn-sm" onclick="saveCategoryHeader('+ci+')">บันทึกชื่อ</button>'
-      +'<button class="btn btn-sm btn-red" onclick="removeCategory('+ci+')">ลบหมวด</button>'
+      +'<button class="btn btn-sm" data-ci="'+ci+'" onclick="saveCategoryHeader(this.dataset.ci)">บันทึกชื่อ</button>'
+      +'<button class="btn btn-sm btn-red" data-ci="'+ci+'" onclick="removeCategory(this.dataset.ci)">ลบหมวด</button>'
       +'</div>'
       +'<div style="overflow-x:auto"><table class="master-table">'
       +'<thead><tr>'
-      +'<th>ชื่อรายการ</th>'
-      +'<th style="width:80px">หน่วย</th>'
-      +'<th class="right" style="width:70px">จำนวน</th>'
-      +'<th class="right" style="width:100px">ค่าของ/หน่วย</th>'
-      +'<th class="right" style="width:100px">ค่าแรง/หน่วย</th>'
-      +'<th class="right" style="width:100px">รวม (฿)</th>'
-      +'<th class="right" style="width:70px">Var %</th>'
-      +'<th class="right" style="width:110px">ราคาเสนอ (฿)</th>'
-      +'<th style="width:32px"></th>'
+      +'<th>ชื่อรายการ</th><th style="width:80px">หน่วย</th><th class="right" style="width:65px">จำนวน</th>'
+      +'<th class="right" style="width:110px">รวมค่าของ (฿)</th><th class="right" style="width:110px">รวมค่าแรง (฿)</th>'
+      +'<th class="right" style="width:110px">รวมทั้งหมด (฿)</th><th class="right" style="width:70px">กำไร %</th>'
+      +'<th class="right" style="width:120px">ราคาเสนอ (฿)</th><th style="width:65px"></th>'
       +'</tr></thead>'
       +'<tbody id="sub-tbody-'+ci+'">'+rows+'</tbody>'
       +'<tfoot><tr class="master-add-row">'
-      +'<td><input id="new-sub-name-'+ci+'" placeholder="ชื่อรายการย่อย"></td>'
+      +'<td><input id="new-sub-name-'+ci+'" placeholder="ชื่อรายการใหม่" style="width:100%"></td>'
       +'<td><select id="new-sub-unit-'+ci+'" style="background:var(--bg4);border:1px solid var(--border);border-radius:var(--r);padding:6px 8px;color:var(--text);font-size:12px;width:100%">'+uOpts+'</select></td>'
       +'<td><input type="number" id="new-sub-qty-'+ci+'" value="1" class="num"></td>'
-      +'<td><input type="number" id="new-sub-mat-'+ci+'" value="0" class="num"></td>'
-      +'<td><input type="number" id="new-sub-lab-'+ci+'" value="0" class="num"></td>'
-      +'<td></td>'
-      +'<td><input type="number" id="new-sub-var-'+ci+'" value="0" class="num" placeholder="0"></td>'
-      +'<td></td>'
-      +'<td><button class="btn btn-xs btn-green" data-ci="'+ci+'" onclick="addSubRow(this.dataset.ci)">+</button></td>'
+      +'<td colspan="6" style="text-align:right;padding-right:8px"><button class="btn btn-xs btn-green" data-ci="'+ci+'" onclick="addSubRow(this.dataset.ci)">+ เพิ่มรายการ</button></td>'
       +'</tr></tfoot>'
       +'</table></div>'
       +'<div style="display:flex;justify-content:flex-end;margin-top:10px">'
       +'<button class="btn btn-gold" data-ci="'+ci+'" onclick="saveCategoryFull(this.dataset.ci)">&#128190; บันทึกหมวดนี้</button>'
-      +'</div>'
-      +'</div>';
+      +'</div></div>';
   }
   el.innerHTML=html;
 }
 
 function addSubRow(ci){
-  const name=document.getElementById('new-sub-name-'+ci).value.trim();
+  ci=parseInt(ci);
+  var name=document.getElementById('new-sub-name-'+ci).value.trim();
   if(!name){toast('กรุณาใส่ชื่อรายการ','error');return;}
-  const unit=document.getElementById('new-sub-unit-'+ci).value;
-  const qty=parseFloat(document.getElementById('new-sub-qty-'+ci).value)||1;
-  const mat=parseFloat(document.getElementById('new-sub-mat-'+ci).value)||0;
-  const lab=parseFloat(document.getElementById('new-sub-lab-'+ci).value)||0;
-  const variance=parseFloat(document.getElementById('new-sub-var-'+ci).value)||0;
-  S.categories[ci].sub.push({name,unit,qty,mat,lab,variance});
+  var unit=document.getElementById('new-sub-unit-'+ci).value;
+  var qty=parseFloat(document.getElementById('new-sub-qty-'+ci).value)||1;
+  S.categories[ci].sub.push({name,unit,qty,materials:[],labor:[],profit_pct:0});
+  var newSi=S.categories[ci].sub.length-1;
+  _expandedSubs.add(ci+'-'+newSi);
   renderMaster();
 }
 
 async function saveCategoryHeader(ci){
-  const cat=S.categories[ci];
-  cat.icon=document.getElementById(`cat-icon-${ci}`).value;
-  cat.name=document.getElementById(`cat-name-${ci}`).value;
+  ci=parseInt(ci);
+  var cat=S.categories[ci];
+  cat.icon=document.getElementById('cat-icon-'+ci).value;
+  cat.name=document.getElementById('cat-name-'+ci).value;
   try{
-    await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
-    toast('บันทึกชื่อหมวดแล้ว');
-    renderCatTags();
+    await api('/api/categories/'+cat.id,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
+    toast('บันทึกชื่อหมวดแล้ว'); renderCatTags();
   }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
 }
 
 async function saveCategoryFull(ci){
-  const cat=S.categories[ci];
-  cat.icon=document.getElementById(`cat-icon-${ci}`).value;
-  cat.name=document.getElementById(`cat-name-${ci}`).value;
-  // Collect all edited sub rows
-  cat.sub=cat.sub.map((_,si)=>({
-    name: document.getElementById('sub-name-'+ci+'-'+si)?.value||subName(cat.sub[si]),
-    unit: document.getElementById('sub-unit-'+ci+'-'+si)?.value||subUnit(cat.sub[si]),
-    qty: parseFloat(document.getElementById('sub-qty-'+ci+'-'+si)?.value)||1,
-    mat: parseFloat(document.getElementById('sub-mat-'+ci+'-'+si)?.value)||0,
-    lab: parseFloat(document.getElementById('sub-lab-'+ci+'-'+si)?.value)||0,
-    variance: parseFloat(document.getElementById('sub-var-'+ci+'-'+si)?.value)||0
-  }));
+  ci=parseInt(ci);
+  var cat=S.categories[ci];
+  cat.icon=document.getElementById('cat-icon-'+ci).value;
+  cat.name=document.getElementById('cat-name-'+ci).value;
+  for(var si=0;si<cat.sub.length;si++) syncSubFromDom(ci,si);
   try{
-    await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
-    toast('บันทึกหมวด "'+cat.name+'" เรียบร้อย');
-    renderMaster();
-    renderCatTags();
+    await api('/api/categories/'+cat.id,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
+    toast('บันทึกหมวด "'+cat.name+'" เรียบร้อย'); renderMaster(); renderCatTags();
   }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
 }
 
 async function addCategoryModal(){
-  const name=prompt('ชื่อหมวดงานใหม่:');
+  var name=prompt('ชื่อหมวดงานใหม่:');
   if(!name) return;
   try{
-    const cat=await api('/api/categories',{method:'POST',body:{name,icon:'📦',sub:[]}});
+    var cat=await api('/api/categories',{method:'POST',body:{name,icon:'📦',sub:[]}});
     S.categories.push({id:cat.id,name:cat.name,icon:cat.icon||'📦',sub:[]});
-    renderMaster();
-    toast('เพิ่มหมวด "'+name+'" แล้ว');
+    renderMaster(); toast('เพิ่มหมวด "'+name+'" แล้ว');
   }catch(e){ toast('เพิ่มหมวดล้มเหลว: '+e.message,'error'); }
 }
 
 async function removeCategory(i){
+  i=parseInt(i);
   if(!confirm('ลบหมวด "'+S.categories[i].name+'" ?')) return;
-  const id=S.categories[i].id;
+  var id=S.categories[i].id;
   try{
-    await api(`/api/categories/${id}`,{method:'DELETE'});
-    S.categories.splice(i,1);
-    S.selectedCats=S.selectedCats.filter(x=>x!==id);
-    saveUiState();
-    renderMaster();
-    renderCatTags();
-    renderBoqTable();
+    await api('/api/categories/'+id,{method:'DELETE'});
+    S.categories.splice(i,1); S.selectedCats=S.selectedCats.filter(x=>x!==id);
+    saveUiState(); renderMaster(); renderCatTags(); renderBoqTable();
   }catch(e){ toast('ลบหมวดล้มเหลว: '+e.message,'error'); }
 }
 
 async function removeSub(ci,si){
+  ci=parseInt(ci); si=parseInt(si);
   S.categories[ci].sub.splice(si,1);
-  const cat=S.categories[ci];
+  var cat=S.categories[ci];
+  _expandedSubs.delete(ci+'-'+si);
   try{
-    await api(`/api/categories/${cat.id}`,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
+    await api('/api/categories/'+cat.id,{method:'PUT',body:{name:cat.name,icon:cat.icon,sub:cat.sub}});
     renderMaster();
   }catch(e){ toast('บันทึกล้มเหลว: '+e.message,'error'); }
 }
