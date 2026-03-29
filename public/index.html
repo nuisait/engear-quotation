@@ -876,6 +876,25 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 </div>
 
 <!-- SAVE REVISION MODAL -->
+<!-- STATUS PICKER POPUP -->
+<div id="status-picker" style="display:none;position:fixed;z-index:9999;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.35);min-width:200px">
+  <div style="font-size:11px;color:var(--text3);margin-bottom:10px;font-weight:600">เปลี่ยนสถานะ BOQ</div>
+  <div id="status-picker-opts" style="display:flex;flex-direction:column;gap:6px"></div>
+  <div id="status-picker-revise-row" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+    <label style="font-size:11px;color:var(--text3);margin-bottom:4px;display:block">เวอร์ชัน</label>
+    <select id="status-picker-ver" style="width:100%;padding:5px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px">
+      <option value="1">v1</option><option value="2">v2</option><option value="3">v3</option>
+      <option value="4">v4</option><option value="5">v5</option><option value="6">v6</option>
+      <option value="7">v7</option><option value="8">v8</option><option value="9">v9</option>
+      <option value="10">v10</option>
+    </select>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+    <button class="btn btn-sm" onclick="closeStatusPicker()">ยกเลิก</button>
+    <button class="btn btn-sm btn-gold" onclick="saveStatusPicker()">บันทึก</button>
+  </div>
+</div>
+
 <div id="modal-revision" class="overlay">
   <div class="modal">
     <div class="modal-title">บันทึก Revision <span class="close" onclick="closeModal('modal-revision')">×</span></div>
@@ -1337,6 +1356,116 @@ function updateBoqStatusUI(){
 }
 
 // ================================================================
+// STATUS PICKER (inline popup in projects table)
+// ================================================================
+var _statusPickerProjId = null;
+
+function openStatusPicker(projId, el){
+  _statusPickerProjId = projId;
+  var p = S.projects.find(function(x){return x.id===projId;});
+  if(!p) return;
+
+  var statuses = [
+    {val:'Draft',  label:'Draft',  color:'#6b7280'},
+    {val:'Submit', label:'Submit', color:'#3b82f6'},
+    {val:'Revise', label:'Revise', color:'#f59e0b'},
+    {val:'Active', label:'Active', color:'#10b981'},
+    {val:'Reject', label:'Reject', color:'#ef4444'}
+  ];
+  var cur = p.boq_status||'Draft';
+  var opts = document.getElementById('status-picker-opts');
+  opts.innerHTML = statuses.map(function(s){
+    var active = s.val===cur;
+    return '<div onclick="pickerSelectStatus(this,\''+s.val+'\')" data-val="'+s.val+'" style="cursor:pointer;padding:6px 10px;border-radius:6px;font-size:12px;font-weight:'+(active?'700':'400')+';'
+      +'background:'+(active?s.color+'22':'transparent')+';color:'+(active?s.color:'var(--text)')+';'
+      +'border:1px solid '+(active?s.color+'66':'transparent')+';display:flex;align-items:center;gap:8px">'
+      +'<span style="width:8px;height:8px;border-radius:50%;background:'+s.color+';flex-shrink:0;display:inline-block"></span>'+s.label+'</div>';
+  }).join('');
+
+  var revRow = document.getElementById('status-picker-revise-row');
+  revRow.style.display = cur==='Revise' ? 'block' : 'none';
+  var verSel = document.getElementById('status-picker-ver');
+  verSel.value = p.revise_ver||1;
+
+  // position popup near element
+  var popup = document.getElementById('status-picker');
+  popup.style.display = 'block';
+  var rect = el.getBoundingClientRect();
+  var top = rect.bottom + 6 + window.scrollY;
+  var left = rect.left + window.scrollX;
+  if(left + 210 > window.innerWidth) left = window.innerWidth - 220;
+  popup.style.top = top+'px';
+  popup.style.left = left+'px';
+
+  // close on outside click
+  setTimeout(function(){
+    document.addEventListener('click', _statusPickerOutside, {once:true});
+  }, 10);
+}
+
+function _statusPickerOutside(e){
+  var popup = document.getElementById('status-picker');
+  if(popup && !popup.contains(e.target)) closeStatusPicker();
+}
+
+function pickerSelectStatus(el, val){
+  // highlight selected
+  var opts = document.getElementById('status-picker-opts');
+  var colors = {Draft:'#6b7280',Submit:'#3b82f6',Revise:'#f59e0b',Active:'#10b981',Reject:'#ef4444'};
+  Array.from(opts.children).forEach(function(d){
+    var v = d.getAttribute('data-val');
+    var active = v===val;
+    var c = colors[v]||'#6b7280';
+    d.style.fontWeight = active?'700':'400';
+    d.style.background = active?c+'22':'transparent';
+    d.style.color = active?c:'var(--text)';
+    d.style.border = '1px solid '+(active?c+'66':'transparent');
+  });
+  var revRow = document.getElementById('status-picker-revise-row');
+  revRow.style.display = val==='Revise' ? 'block' : 'none';
+}
+
+function closeStatusPicker(){
+  document.getElementById('status-picker').style.display = 'none';
+  document.removeEventListener('click', _statusPickerOutside);
+  _statusPickerProjId = null;
+}
+
+async function saveStatusPicker(){
+  var projId = _statusPickerProjId;
+  if(!projId) return;
+  var p = S.projects.find(function(x){return x.id===projId;});
+  if(!p) return;
+
+  var opts = document.getElementById('status-picker-opts');
+  var selected = Array.from(opts.children).find(function(d){
+    return d.style.fontWeight==='700'||d.style.fontWeight===700;
+  });
+  if(!selected) return closeStatusPicker();
+  var newStatus = selected.getAttribute('data-val');
+  var newRevVer = p.revise_ver||0;
+  if(newStatus==='Revise'){
+    newRevVer = parseInt(document.getElementById('status-picker-ver').value)||1;
+  }
+
+  try{
+    await api('/api/projects/'+projId,{method:'PUT',body:{
+      name:p.name, quo_no:p.quoNo, client:p.client, company:p.company,
+      phone:p.phone, email:p.email, location:p.location,
+      boq_status:newStatus, revise_ver:newRevVer
+    }});
+    p.boq_status = newStatus;
+    p.revise_ver = newRevVer;
+    renderProjects();
+    if(S.activeProjectId===projId) updateBoqStatusUI();
+    toast('อัปเดตสถานะ: '+newStatus+(newStatus==='Revise'?' v'+newRevVer:''));
+  }catch(e){
+    toast('ไม่สามารถบันทึกสถานะได้: '+e.message,'error');
+  }
+  closeStatusPicker();
+}
+
+// ================================================================
 // DASHBOARD
 // ================================================================
 function renderDashboard(){
@@ -1418,7 +1547,7 @@ function renderProjects(){
     var bqLabel = bqStatus==='Revise'&&bqRevVer>0 ? 'Revise v'+bqRevVer : bqStatus;
     var bqColors = {Draft:'#6b7280',Submit:'#3b82f6',Revise:'#f59e0b',Active:'#10b981',Reject:'#ef4444'};
     var bqC = bqColors[bqStatus]||'#6b7280';
-    html += '<td><span style="display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:'+bqC+'22;color:'+bqC+';border:1px solid '+bqC+'55">'+bqLabel+'</span></td>';
+    html += '<td><span data-pid="'+p.id+'" onclick="openStatusPicker('+p.id+',this)" style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:'+bqC+'22;color:'+bqC+';border:1px solid '+bqC+'55;cursor:pointer" title="คลิกเพื่อเปลี่ยนสถานะ">'+bqLabel+' ▾</span></td>';
     html += '<td style="text-align:right;white-space:nowrap">';
     if(!hasBoq){
       html += '<button class="btn btn-sm btn-gold" onclick="goBoqForProject('+p.id+')">+ สร้าง BOQ</button> ';
