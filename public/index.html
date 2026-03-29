@@ -417,9 +417,12 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <div class="page-header">
         <div style="display:flex;align-items:center;gap:14px">
           <div class="back-btn" onclick="nav('projects')">← กลับ</div>
-          <div>
-            <div class="page-title" id="proj-detail-name">โครงการ</div>
-            <div class="page-subtitle" id="proj-detail-meta"></div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="font-size:32px;font-weight:800;letter-spacing:-1px;color:var(--accent);line-height:1">BOQ</div>
+            <div>
+              <div class="page-title" id="proj-detail-name">โครงการ</div>
+              <div class="page-subtitle" id="proj-detail-meta"></div>
+            </div>
           </div>
         </div>
         <div class="header-actions">
@@ -432,13 +435,15 @@ hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
       <!-- BOQ STATUS BAR -->
       <div style="display:flex;align-items:center;gap:8px;padding:8px 32px;background:var(--bg3);border-bottom:1px solid var(--border)">
         <span style="font-size:11px;color:var(--text3);margin-right:4px">สถานะ BOQ:</span>
-        <button id="boq-btn-draft"    class="quo-status-btn" onclick="updateBoqStatus('Draft')">Draft</button>
+        <button id="boq-btn-draft"   class="quo-status-btn" onclick="updateBoqStatus('Draft')">Draft</button>
         <span style="color:var(--border2)">›</span>
-        <button id="boq-btn-submit"   class="quo-status-btn" onclick="updateBoqStatus('Submit')">Submit</button>
+        <button id="boq-btn-submit"  class="quo-status-btn" onclick="updateBoqStatus('Submit')">Submit</button>
         <span style="color:var(--border2)">›</span>
-        <button id="boq-btn-revise"   class="quo-status-btn" onclick="updateBoqStatus('Revise')">Revise</button>
+        <button id="boq-btn-revise"  class="quo-status-btn" onclick="updateBoqStatus('Revise')">Revise</button>
         <span style="color:var(--border2)">›</span>
-        <button id="boq-btn-final"    class="quo-status-btn" onclick="updateBoqStatus('Final')">Final</button>
+        <button id="boq-btn-active"  class="quo-status-btn" onclick="updateBoqStatus('Active')">Active</button>
+        <span style="color:var(--border2)">|</span>
+        <button id="boq-btn-reject"  class="quo-status-btn" onclick="updateBoqStatus('Reject')">Reject</button>
         <span style="flex:1"></span>
         <span id="proj-status-badge" style="font-size:11px;background:var(--bg4);border:1px solid var(--border);border-radius:20px;padding:3px 10px;color:var(--text2)"></span>
       </div>
@@ -1284,14 +1289,19 @@ async function updateBoqStatus(status){
   if(!S.activeProjectId) return;
   const p = S.projects.find(x=>x.id===S.activeProjectId);
   if(!p) return;
+  var newRevVer = p.revise_ver||0;
+  if(status==='Revise') newRevVer = newRevVer + 1;
   try{
     await api('/api/projects/'+S.activeProjectId,{method:'PUT',body:{
       name:p.name, quo_no:p.quoNo, client:p.client, company:p.company,
-      phone:p.phone, email:p.email, location:p.location, boq_status:status
+      phone:p.phone, email:p.email, location:p.location,
+      boq_status:status, revise_ver:newRevVer
     }});
     p.boq_status=status;
+    p.revise_ver=newRevVer;
     updateBoqStatusUI();
-    toast('BOQ Status: '+status);
+    renderProjects();
+    toast('BOQ Status: '+status+(status==='Revise'?' v'+newRevVer:''));
   }catch(e){ toast('ไม่สามารถเปลี่ยนสถานะได้: '+e.message,'error'); }
 }
 
@@ -1299,19 +1309,29 @@ function updateBoqStatusUI(){
   const p = S.projects.find(x=>x.id===S.activeProjectId);
   const boqStatus = p?.boq_status||'Draft';
   const projStatus = p?.project_status||'เสนอราคา';
-  const statuses = ['Draft','Submit','Revise','Final'];
-  const colors = {Draft:'var(--text3)',Submit:'var(--accent)',Revise:'#e8b84b',Final:'var(--green)'};
-  statuses.forEach(s=>{
+  const revVer = p?.revise_ver||0;
+  const statuses = ['Draft','Submit','Revise','Active','Reject'];
+  const colors = {Draft:'#6b7280',Submit:'#3b82f6',Revise:'#f59e0b',Active:'#10b981',Reject:'#ef4444'};
+  statuses.forEach(function(s){
     const btn=document.getElementById('boq-btn-'+s.toLowerCase());
     if(!btn) return;
     const isActive = s===boqStatus;
     btn.style.background = isActive ? colors[s] : 'var(--bg3)';
-    btn.style.color = isActive ? (s==='Draft'?'var(--text)':'#fff') : 'var(--text3)';
+    btn.style.color = isActive ? '#fff' : 'var(--text3)';
     btn.style.border = '1px solid '+(isActive ? colors[s] : 'var(--border)');
     btn.style.fontWeight = isActive ? '600' : '400';
+    if(s==='Revise') btn.textContent = isActive && revVer>0 ? 'Revise v'+revVer : 'Revise';
   });
   const badge=document.getElementById('proj-status-badge');
-  if(badge) badge.textContent='สถานะโครงการ: '+projStatus;
+  if(badge){
+    const bColors = {Draft:'#6b7280',Submit:'#3b82f6',Revise:'#f59e0b',Active:'#10b981',Reject:'#ef4444'};
+    var label = boqStatus;
+    if(boqStatus==='Revise' && revVer>0) label = 'Revise v'+revVer;
+    badge.textContent = label;
+    badge.style.background = (bColors[boqStatus]||'#6b7280')+'22';
+    badge.style.color = bColors[boqStatus]||'#6b7280';
+    badge.style.border = '1px solid '+(bColors[boqStatus]||'#6b7280')+'55';
+  }
   const detailMeta=document.getElementById('proj-detail-meta');
   if(detailMeta&&p) detailMeta.textContent=[p.quoNo,p.client,p.location].filter(Boolean).join(' · ');
 }
@@ -1369,7 +1389,7 @@ function renderProjects(){
   const statusColor = {'เสนอราคา':'#6b7280','ยื่นราคา':'#3b82f6','รอผล':'#f59e0b','กำลังทำงาน':'#10b981','จบงาน':'#8b5cf6'};
 
   let html = '<table class="proj-table"><thead><tr>';
-  html += '<th>ชื่อโครงการ</th><th>ลูกค้า / บริษัท</th><th>เลข BOQ</th><th>มูลค่างาน</th><th style="text-align:right">จัดการ</th>';
+  html += '<th>ชื่อโครงการ</th><th>ลูกค้า / บริษัท</th><th>เลข BOQ</th><th>มูลค่างาน</th><th>สถานะ BOQ</th><th style="text-align:right">จัดการ</th>';
   html += '</tr></thead><tbody>';
 
   filtered.forEach(function(p){
@@ -1393,6 +1413,12 @@ function renderProjects(){
     html += '</td>';
     html += '<td>'+boqHtml+'</td>';
     html += '<td>'+totalHtml+'</td>';
+    var bqStatus = p.boq_status||'Draft';
+    var bqRevVer = p.revise_ver||0;
+    var bqLabel = bqStatus==='Revise'&&bqRevVer>0 ? 'Revise v'+bqRevVer : bqStatus;
+    var bqColors = {Draft:'#6b7280',Submit:'#3b82f6',Revise:'#f59e0b',Active:'#10b981',Reject:'#ef4444'};
+    var bqC = bqColors[bqStatus]||'#6b7280';
+    html += '<td><span style="display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:'+bqC+'22;color:'+bqC+';border:1px solid '+bqC+'55">'+bqLabel+'</span></td>';
     html += '<td style="text-align:right;white-space:nowrap">';
     if(!hasBoq){
       html += '<button class="btn btn-sm btn-gold" onclick="goBoqForProject('+p.id+')">+ สร้าง BOQ</button> ';
@@ -1406,7 +1432,7 @@ function renderProjects(){
   });
 
   if(filtered.length===0){
-    html += '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text3)">'+(search?'ไม่พบโครงการที่ค้นหา':'ยังไม่มีโครงการ กด "+ เพิ่มโครงการ" เพื่อเริ่มต้น')+'</td></tr>';
+    html += '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text3)">'+(search?'ไม่พบโครงการที่ค้นหา':'ยังไม่มีโครงการ กด "+ เพิ่มโครงการ" เพื่อเริ่มต้น')+'</td></tr>';
   }
 
   html += '</tbody></table>';
@@ -1527,7 +1553,8 @@ function mapProject(p){
     customer_id:p.customer_id||null,
     start_date:p.start_date||'', end_date:p.end_date||'',
     project_status:p.project_status||'เสนอราคา',
-    boq_status:p.boq_status||'Draft'
+    boq_status:p.boq_status||'Draft',
+    revise_ver:p.revise_ver||0
   };
 }
 
